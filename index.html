@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Spore Protocol - 孢子协议 v9</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-font, "Segoe UI", "PingFang SC", sans-serif;
+            max-width: 1000px;
+            margin: 24px auto;
+            padding: 0 16px;
+            color: #222;
+        }
+        h1 { font-size: 22px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .spore-icon { width: 1.4em; height: 1.4em; }
+        .title-en { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; color: #1a5ba8; }
+        .title-cn { font-size: 13px; color: #666; letter-spacing: 1px; margin-left: -4px; }
+        .slogan {
+            font-size: 15px;
+            color: #4a90d9;
+            margin: 8px 0 16px 0;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #f0f4fa 0%, #e8f0fe 100%);
+            border-radius: 8px;
+            border-left: 4px solid #4a90d9;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        h2 { font-size: 16px; margin-top: 22px; border-left: 4px solid #4a90d9; padding-left: 8px; }
+        .card {
+            border: 1px solid #ddd; border-radius: 8px; padding: 14px 16px;
+            margin-top: 10px; background: #fafbfc;
+        }
+        button {
+            background: #4a90d9; color: #fff; border: 0; padding: 8px 16px;
+            border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 6px;
+            transition: background 0.15s;
+        }
+        button:hover { background: #3a7bc8; }
+        button:disabled { background: #aaa; cursor: not-allowed; }
+        button.secondary { background: #fff; color: #4a90d9; border: 1px solid #4a90d9; }
+        button.secondary:hover { background: #eaf2fc; }
+        .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .info { font-size: 13px; color: #555; line-height: 1.7; }
+        .ok { color: #1a7f37; }
+        .err { color: #c0392b; }
+        .key-row {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            margin: 8px 0 4px 0; padding: 8px 12px; background: #f0f4fa;
+            border-radius: 6px; border: 1px solid #dce3ed;
+        }
+        .key-row label { font-weight: 500; font-size: 14px; color: #333; display: flex; align-items: center; gap: 4px; }
+        .input-box {
+            padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px;
+            font-size: 14px; font-family: ui-monospace, Menlo, monospace;
+            background: #fff; transition: border-color 0.2s; width: 100%;
+            color: #333;
+        }
+        .input-box:focus { border-color: #4a90d9; outline: none; box-shadow: 0 0 0 3px rgba(74,144,217,0.15); }
+        input[type="file"].input-box { display: none; }
+        .file-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #fff; color: #4a90d9; border: 1px solid #4a90d9;
+            padding: 8px 16px; border-radius: 6px; cursor: pointer;
+            font-size: 14px; margin-top: 6px; font-family: inherit;
+            transition: background 0.15s; white-space: nowrap;
+        }
+        .file-btn:hover { background: #eaf2fc; }
+        .file-btn .ico { width: 1em; height: 1em; }
+        .file-btn-text { display: inline-block; }
+        textarea.input-box { resize: vertical; min-height: 80px; line-height: 1.5; }
+        .key-hint { font-size: 12px; color: #888; margin-left: 2px; }
+        .key-strength { font-size: 12px; margin-left: 8px; font-weight: 600; }
+        .strength-weak { color: #c0392b; }
+        .strength-medium { color: #d97706; }
+        .strength-strong { color: #1a7f37; }
+
+        /* 密钥操作按钮 */
+        .key-actions {
+            display: flex; gap: 6px; align-items: center; flex-shrink: 0;
+        }
+        .key-actions button {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 6px 12px; font-size: 13px; margin-top: 0;
+            white-space: nowrap;
+        }
+        .key-actions button .ico { width: 0.9em; height: 0.9em; }
+
+        /* 进度条 */
+        .progress-wrap { margin: 10px 0 4px 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .progress-wrap progress { flex: 1; min-width: 120px; height: 20px; border-radius: 10px; border: none; background: #e9ecef; appearance: none; -webkit-appearance: none; }
+        .progress-wrap progress::-webkit-progress-bar { background: #e9ecef; border-radius: 10px; }
+        .progress-wrap progress::-webkit-progress-value { background: #4a90d9; border-radius: 10px; transition: width 0.2s; }
+        .progress-wrap progress::-moz-progress-bar { background: #4a90d9; border-radius: 10px; }
+        .progress-label { font-size: 13px; color: #555; white-space: nowrap; min-width: 56px; text-align: right; font-variant-numeric: tabular-nums; }
+        .progress-status { font-size: 12px; color: #777; flex: 1; min-width: 100px; }
+
+        .download-link {
+            display: inline-block; margin-top: 8px; background: #e8f0fe; padding: 6px 14px;
+            border-radius: 4px; color: #1a5ba8; text-decoration: none; font-size: 13px;
+            border: 1px solid #c5d8ed; transition: background 0.15s; cursor: pointer;
+        }
+        .download-link:hover { background: #d4e3fa; }
+
+        /* 弹窗 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.45); display: none; justify-content: center; align-items: center;
+            z-index: 9999; backdrop-filter: blur(2px); animation: fadeIn 0.25s ease;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: #fff; border-radius: 16px; max-width: 480px; width: 90%;
+            padding: 28px 24px 20px; box-shadow: 0 20px 48px rgba(0,0,0,0.25);
+            animation: slideUp 0.3s ease; border: 1px solid #e4e8f0;
+        }
+        .modal-box h3 { margin: 0 0 8px 0; font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .modal-box h3 .icon { font-size: 24px; }
+        .modal-box p { margin: 10px 0 6px 0; font-size: 14px; color: #333; line-height: 1.6; }
+        .modal-box .file-name-highlight { background: #f0f4fa; border-radius: 6px; padding: 8px 12px; font-family: ui-monospace, Menlo, monospace; font-size: 14px; color: #1a5ba8; word-break: break-all; margin: 8px 0 12px 0; border: 1px solid #dce3ed; }
+        .modal-box .btn-close-modal { background: #4a90d9; color: #fff; border: none; padding: 8px 24px; border-radius: 6px; font-size: 14px; cursor: pointer; margin-top: 8px; float: right; }
+        .modal-box .btn-close-modal:hover { background: #3a7bc8; }
+        .modal-box .warning-icon { color: #d97706; }
+        .modal-box .info-icon { color: #4a90d9; }
+        .clearfix::after { content: ""; display: table; clear: both; }
+
+
+        /* 右上角操作按钮 */
+        .header-actions {
+            position: absolute;
+            top: 20px;
+            right: 16px;
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+        .header-actions button {
+            margin-top: 0;
+            font-size: 13px;
+            padding: 6px 12px;
+        }
+        /* 使用说明弹窗 - 更大更宽 */
+        .modal-box.usage-modal {
+            max-width: 680px;
+            width: 92%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 28px 28px 24px;
+        }
+        .usage-modal h4 {
+            margin: 18px 0 8px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a5ba8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .usage-modal h4:first-child {
+            margin-top: 0;
+        }
+        .usage-modal p {
+            margin: 6px 0;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+        .usage-modal ul {
+            margin: 6px 0 6px 20px;
+            padding: 0;
+        }
+        .usage-modal ul li {
+            margin: 4px 0;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            list-style: none;
+        }
+        .usage-modal .usage-steps {
+            background: #f0f4fa;
+            border: 1px solid #dce3ed;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin: 10px 0;
+        }
+        .usage-modal .usage-steps li {
+            list-style: none;
+            margin-left: -20px;
+            padding-left: 8px;
+        }
+        .usage-modal .usage-steps li::before {
+            content: "\25B6";
+            color: #4a90d9;
+            font-weight: bold;
+            font-size: 10px;
+            vertical-align: middle;
+        }
+        .usage-modal .usage-warning {
+            background: #fff8ee;
+            border: 1px solid #f0e3c2;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 10px 0;
+        }
+        .usage-modal .usage-warning li::before {
+            content: "\26A0";
+            color: #d97706;
+            font-weight: bold;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .sep { border-top: 1px dashed #ddd; margin: 18px 0 8px 0; }
+        .mt-1 { margin-top: 4px; }
+        .flex { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+        /* SVG 图标 */
+        .ico { display: inline-flex; align-items: center; justify-content: center; vertical-align: -0.15em; width: 1em; height: 1em; flex: none; }
+        .ico svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .ico svg .fill { fill: currentColor; stroke: none; }
+        .modal-box h3 .ico { width: 1.2em; height: 1.2em; vertical-align: -0.2em; }
+        .audio-cover .ico { width: 44px; height: 44px; }
+        .generic-icon .ico { width: 56px; height: 56px; }
+        .arch-icon .ico { width: 16px; height: 16px; }
+        .pv-title .ico { width: 1.05em; height: 1.05em; vertical-align: -0.18em; }
+
+        /* ===== 编码：文字输入区 ===== */
+        .text-encode-area { margin-top: 10px; }
+        .text-encode-area textarea {
+            width: 100%; min-height: 100px; padding: 10px 12px; border: 1px solid #ccc;
+            border-radius: 6px; font-size: 14px; font-family: ui-monospace, Menlo, monospace;
+            resize: vertical; background: #fff; transition: border-color 0.2s;
+        }
+        .text-encode-area textarea:focus { border-color: #4a90d9; outline: none; box-shadow: 0 0 0 3px rgba(74,144,217,0.15); }
+        .tab-bar { display: flex; gap: 0; margin-bottom: -1px; }
+        .tab-bar button {
+            background: #fff; color: #555; border: 1px solid #ddd; border-bottom: none;
+            border-radius: 6px 6px 0 0; padding: 7px 14px; font-size: 13px; margin: 0;
+        }
+        .tab-bar button.active { background: #fafbfc; color: #4a90d9; border-color: #ddd; font-weight: 600; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* 隐写模式分段控件 */
+        .mode-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 6px 0 10px 0; padding: 8px 12px; background: #f0f4fa; border: 1px solid #dce3ed; border-radius: 6px; }
+        .mode-row .mode-label { font-weight: 500; font-size: 13px; color: #333; display: flex; align-items: center; gap: 4px; }
+        .mode-row .seg { display: inline-flex; border: 1px solid #c5d8ed; border-radius: 6px; overflow: hidden; background: #fff; }
+        .mode-row .seg button { background: #fff; color: #555; border: 0; padding: 6px 12px; font-size: 12.5px; cursor: pointer; transition: background .15s, color .15s; }
+        .mode-row .seg button.active { background: #4a90d9; color: #fff; font-weight: 600; }
+        .mode-row .seg button:not(.active):hover { background: #eaf2fc; }
+        .mode-row .mode-hint { font-size: 12px; color: #888; margin-left: auto; }
+        .carrier-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0 4px 0; padding: 8px 12px; background: #fff8ee; border: 1px solid #f0e3c2; border-radius: 6px; }
+        .carrier-row .carrier-label { font-weight: 500; font-size: 13px; color: #8a5a00; }
+        .carrier-row .carrier-info { font-size: 12px; color: #888; }
+
+        /* ===== 预览区 ===== */
+        .preview-wrap {
+            margin-top: 12px; border: 1px solid #dce3ed; border-radius: 10px;
+            background: #fff; overflow: hidden;
+        }
+        .preview-header {
+            display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+            background: #f0f4fa; border-bottom: 1px solid #dce3ed; font-size: 13px; color: #333;
+        }
+        .preview-header .pv-title { font-weight: 600; }
+        .preview-header .pv-meta { color: #888; font-size: 12px; margin-left: auto; }
+        .preview-body { padding: 14px; }
+        .preview-body .pv-placeholder { color: #999; font-size: 13px; text-align: center; padding: 30px 10px; }
+
+        .pv-image { text-align: center; }
+        .pv-image img { max-width: 100%; max-height: 420px; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+        .pv-image .pv-info { font-size: 12px; color: #888; margin-top: 6px; }
+
+        .pv-text pre {
+            margin: 0; max-height: 420px; overflow: auto; background: #0f1729; color: #e6edf3;
+            padding: 14px 16px; border-radius: 8px; font-size: 13px; line-height: 1.6;
+            font-family: ui-monospace, Menlo, "Fira Code", monospace; white-space: pre-wrap; word-break: break-all;
+        }
+        .pv-text .pv-lang-badge {
+            display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px;
+            background: #4a90d9; color: #fff; margin-bottom: 8px; font-weight: 600;
+        }
+
+        .pv-audio { text-align: center; padding: 10px 6px; }
+        .pv-audio .audio-cover {
+            width: 110px; height: 110px; border-radius: 50%; margin: 0 auto 14px;
+            background: linear-gradient(135deg, #4a90d9, #7bb8f0); display: flex; align-items: center;
+            justify-content: center; font-size: 44px; color: #fff; box-shadow: 0 6px 20px rgba(74,144,217,0.35);
+        }
+        .pv-audio .audio-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px; word-break: break-all; }
+        .pv-audio audio { width: 100%; max-width: 460px; margin-top: 6px; }
+
+        .pv-video { text-align: center; }
+        .pv-video .video-frame {
+            position: relative; max-width: 640px; margin: 0 auto; border-radius: 12px;
+            overflow: hidden; background: #000; box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+        }
+        .pv-video video { width: 100%; display: block; border-radius: 12px; }
+        .pv-video .video-frame::after {
+            content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 44px;
+            background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0)); border-radius: 0 0 12px 12px; pointer-events: none;
+        }
+
+        .pv-archive .arch-summary { font-size: 13px; color: #555; margin-bottom: 8px; }
+        .pv-archive .arch-list { max-height: 340px; overflow: auto; border: 1px solid #e5e9f0; border-radius: 8px; }
+        .pv-archive .arch-row {
+            display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 12.5px;
+            border-bottom: 1px solid #f0f2f5; font-family: ui-monospace, Menlo, monospace;
+        }
+        .pv-archive .arch-row:last-child { border-bottom: none; }
+        .pv-archive .arch-row:hover { background: #f5f9ff; }
+        .pv-archive .arch-icon { font-size: 15px; width: 20px; text-align: center; }
+        .pv-archive .arch-name { flex: 1; word-break: break-all; color: #333; }
+        .pv-archive .arch-size { color: #999; white-space: nowrap; font-size: 11.5px; }
+        .pv-archive .arch-empty { padding: 18px; text-align: center; color: #999; font-size: 13px; }
+
+        .pv-generic { text-align: center; padding: 20px 10px; }
+        .pv-generic .generic-icon { font-size: 56px; margin-bottom: 10px; }
+        .pv-generic .generic-name { font-size: 14px; font-weight: 600; color: #333; word-break: break-all; }
+        .pv-generic .generic-meta { font-size: 12px; color: #999; margin-top: 4px; }
+
+        .pv-hex pre {
+            margin: 0; max-height: 320px; overflow: auto; background: #0f1729; color: #c9d3df;
+            padding: 12px 14px; border-radius: 8px; font-size: 12px; line-height: 1.55;
+            font-family: ui-monospace, Menlo, monospace;
+        }
+
+        /* 加密标识徽章 */
+        .enc-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #1a7f37; color: #fff; font-size: 11px; font-weight: 600;
+            padding: 2px 8px; border-radius: 10px; margin-left: 8px;
+        }
+        .enc-badge svg { width: 12px; height: 12px; }
+    
+        /* ===== 移动端响应式适配 ===== */
+        @media (max-width: 600px) {
+            body {
+                margin: 12px auto;
+                padding: 0 10px;
+            }
+            h1 {
+                font-size: 18px;
+                margin-bottom: 4px;
+                gap: 6px;
+            }
+            .spore-icon {
+                width: 1.3em;
+                height: 1.3em;
+            }
+            .title-en {
+                font-size: 18px;
+            }
+            .title-cn {
+                font-size: 12px;
+            }
+            .enc-badge {
+                font-size: 10px;
+                padding: 1px 6px;
+                margin-left: 0;
+            }
+            .slogan {
+                font-size: 13px;
+                padding: 6px 12px;
+                margin: 6px 0 12px 0;
+            }
+            .info {
+                font-size: 12px;
+                line-height: 1.5;
+            }
+            h2 {
+                font-size: 14px;
+                margin-top: 16px;
+            }
+            .card {
+                padding: 10px 12px;
+                margin-top: 8px;
+            }
+            .key-row {
+                padding: 6px 8px;
+                gap: 6px;
+            }
+            .key-row label {
+                font-size: 13px;
+            }
+            .input-box {
+                font-size: 13px;
+                padding: 5px 8px;
+            }
+            .key-actions button {
+                padding: 5px 8px;
+                font-size: 12px;
+            }
+            .key-hint {
+                font-size: 11px;
+            }
+            .key-strength {
+                font-size: 11px;
+                margin-left: 4px;
+            }
+            button {
+                padding: 7px 14px;
+                font-size: 13px;
+            }
+            .tab-bar button {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            .mode-row {
+                padding: 6px 8px;
+                gap: 8px;
+            }
+            .mode-row .mode-label {
+                font-size: 12px;
+            }
+            .mode-row .seg button {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+            .mode-row .mode-hint {
+                font-size: 11px;
+            }
+            .carrier-row {
+                padding: 6px 8px;
+                gap: 6px;
+            }
+            .carrier-row .carrier-label {
+                font-size: 12px;
+            }
+            .carrier-row .carrier-info {
+                font-size: 11px;
+            }
+            .progress-wrap {
+                margin: 8px 0 2px 0;
+                gap: 8px;
+            }
+            .progress-label {
+                font-size: 12px;
+                min-width: 44px;
+            }
+            .progress-status {
+                font-size: 11px;
+            }
+            .download-link {
+                font-size: 12px;
+                padding: 5px 10px;
+            }
+            .flex {
+                gap: 6px;
+            }
+            /* 右上角按钮适配 */
+            .header-actions {
+                position: static;
+                justify-content: flex-end;
+                margin-bottom: 10px;
+            }
+            .header-actions button {
+                font-size: 12px;
+                padding: 5px 10px;
+            }
+            /* 预览区适配 */
+            .preview-header {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            .preview-body {
+                padding: 10px;
+            }
+            .pv-image img {
+                max-height: 300px;
+            }
+            .pv-text pre {
+                font-size: 12px;
+                padding: 10px 12px;
+            }
+            .pv-audio .audio-cover {
+                width: 80px;
+                height: 80px;
+                font-size: 32px;
+            }
+            .pv-archive .arch-row {
+                font-size: 11px;
+                padding: 5px 8px;
+            }
+            /* 弹窗适配 */
+            .modal-box {
+                width: 95%;
+                padding: 20px 16px 16px;
+            }
+            .modal-box h3 {
+                font-size: 18px;
+            }
+            .modal-box p {
+                font-size: 13px;
+            }
+            .usage-modal {
+                max-width: 95%;
+                padding: 20px 16px 16px;
+            }
+            .usage-modal h4 {
+                font-size: 14px;
+            }
+            .usage-modal p,
+            .usage-modal ul li {
+                font-size: 13px;
+            }
+            /* 文件选择按钮移动端适配 */
+            .file-btn {
+                padding: 7px 14px;
+                font-size: 13px;
+            }
+        }
+
+        /* 小屏手机特别优化 */
+        @media (max-width: 380px) {
+            h1 {
+                font-size: 16px;
+            }
+            .title-en {
+                font-size: 16px;
+            }
+            .spore-icon {
+                width: 1.2em;
+                height: 1.2em;
+            }
+        }
+
+        /* ============================================================
+           电脑版（桌面 / exe）构图适配 —— 仅调整布局，不涉及任何逻辑
+           ============================================================ */
+        @media (min-width: 601px) {
+            html { height: 100%; }
+            body {
+                max-width: 1360px;
+                margin: 0 auto;
+                padding: 0 24px 16px;
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+                font-size: 14px;
+            }
+
+            /* ===== 顶部应用栏：标题左 / 操作按钮右 ===== */
+            .app-header {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                align-items: center;
+                gap: 2px 20px;
+                padding: 14px 4px 12px;
+                margin-bottom: 4px;
+                border-bottom: 2px solid #e4e8f0;
+            }
+            h1 {
+                grid-column: 1; grid-row: 1;
+                font-size: 24px; margin: 0; gap: 10px;
+            }
+            h1 .title-en { font-size: 24px; }
+            .slogan {
+                grid-column: 1; grid-row: 2;
+                margin: 8px 0 2px; font-size: 14px; padding: 6px 14px;
+            }
+            .info {
+                grid-column: 1; grid-row: 3;
+                margin: 0; font-size: 13px; line-height: 1.6;
+            }
+            .header-actions {
+                grid-column: 2; grid-row: 1 / span 3;
+                position: static;
+                justify-self: end; align-self: center;
+                gap: 10px;
+            }
+            .header-actions button { font-size: 13px; padding: 8px 16px; }
+
+            /* ===== 密码栏：横向排布，横跨全宽 ===== */
+            .key-row {
+                margin: 14px 0 16px; padding: 12px 16px; border-radius: 8px;
+                gap: 12px;
+            }
+            .key-row .input-box { flex: 1 1 240px; width: auto; min-width: 200px; padding: 8px 12px; }
+            .key-actions button { padding: 8px 14px; font-size: 13px; }
+
+            /* ===== 主体：编码 / 解码 左右分栏 ===== */
+            .main-container {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 18px;
+                align-items: stretch;
+                flex: 1 1 auto;
+            }
+            .card {
+                margin-top: 0;
+                padding: 16px 18px 18px;
+                display: flex;
+                flex-direction: column;
+                border-color: #dce3ed;
+                background: #fafbfc;
+                max-height: calc(100vh - 300px);
+                min-height: 460px;
+                overflow-y: auto;
+            }
+            .card h2 {
+                margin-top: 0; margin-bottom: 12px; font-size: 16px;
+                padding-bottom: 8px; border-bottom: 1px solid #e6ebf2;
+            }
+            .preview-wrap { margin-top: auto; }
+
+            /* ===== 控件尺寸（桌面鼠标操作） ===== */
+            button { padding: 9px 18px; font-size: 14px; }
+            .tab-bar button { padding: 8px 16px; font-size: 13px; }
+            .mode-row { padding: 10px 14px; margin: 0 0 12px; }
+            .mode-row .seg button { padding: 7px 14px; font-size: 13px; }
+            .carrier-row { padding: 10px 14px; }
+            .text-encode-area textarea { min-height: 160px; }
+            textarea.input-box { min-height: 160px; }
+            .progress-wrap { margin: 10px 0 6px; }
+            .progress-wrap progress { height: 18px; }
+            .download-link { padding: 7px 16px; font-size: 13px; }
+            .info { font-size: 13px; }
+
+            /* ===== 底部状态栏 ===== */
+            .app-footer {
+                margin-top: 14px; padding: 10px 4px 4px;
+                border-top: 1px solid #e4e8f0;
+                display: flex; justify-content: space-between; align-items: center;
+                gap: 12px; flex-wrap: wrap;
+                font-size: 12px; color: #8a94a6;
+            }
+            .app-footer .foot-badge {
+                display: inline-flex; align-items: center; gap: 5px;
+                background: #eef4fb; color: #1a5ba8; border: 1px solid #dce3ed;
+                border-radius: 10px; padding: 2px 10px; font-weight: 600;
+            }
+
+            /* ===== 桌面滚动条美化 ===== */
+            .card::-webkit-scrollbar, .pv-text pre::-webkit-scrollbar,
+            .pv-archive .arch-list::-webkit-scrollbar, .usage-modal::-webkit-scrollbar { width: 8px; height: 8px; }
+            .card::-webkit-scrollbar-thumb, .pv-text pre::-webkit-scrollbar-thumb,
+            .pv-archive .arch-list::-webkit-scrollbar-thumb, .usage-modal::-webkit-scrollbar-thumb {
+                background: #c9d6e4; border-radius: 8px;
+            }
+            .card::-webkit-scrollbar-thumb:hover { background: #9fb6cc; }
+            .card::-webkit-scrollbar-track { background: transparent; }
+        }
+
+        /* 中等宽度窗口（如 exe 窗口偏窄）自动回落为单列 */
+        @media (min-width: 601px) and (max-width: 1024px) {
+            .main-container { grid-template-columns: 1fr; }
+            .card { max-height: none; min-height: 0; overflow-y: visible; }
+        }
+    
+/* ===== v7: 侧边栏 + .sp 封印 ===== */
+body{max-width:none!important;margin:0!important;padding:0!important}
+.shell{display:flex;min-height:100vh}
+.sidebar{width:228px;flex:none;position:sticky;top:0;height:100vh;padding:18px 12px;background:linear-gradient(180deg,#f0f4fa,#e8f0fe);border-right:1px solid #dce3ed;display:flex;flex-direction:column;gap:6px}
+.sb-title{font-size:12px;color:#7a8aa3;letter-spacing:2px;padding:4px 8px 8px}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;margin:0;padding:10px 12px;background:transparent;color:#35507a;border:0;border-left:4px solid transparent;border-radius:8px;text-align:left;font-size:14px;line-height:1.3}
+.nav-item:hover{background:#fff}
+.nav-item.active{background:#fff;border-left-color:#4a90d9;color:#1a5ba8;font-weight:600;box-shadow:0 1px 4px rgba(74,144,217,.18)}
+.nav-item .ico{font-size:20px}
+.nav-item small{display:block;font-weight:400;font-size:11px;color:#7a8aa3;margin-top:2px}
+.sb-foot{margin-top:auto;font-size:11px;color:#8a94a6;line-height:1.6;padding:8px}
+.content{flex:1;min-width:0;max-width:1060px;margin:0 auto;padding:24px 18px;position:relative}
+.drop{border:2px dashed #b9cde6;border-radius:10px;padding:14px;text-align:center;background:#f7fafe;color:#4a6a96;font-size:13px;transition:.15s}
+.drop.over{background:#e8f0fe;border-color:#4a90d9}
+.sp-list{margin:6px 0;font-size:12.5px}
+.sp-item{display:flex;gap:8px;padding:3px 6px;border-bottom:1px dashed #e4e8f0;align-items:center}
+.sp-item .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-item b{cursor:pointer;color:#c0392b;padding:0 4px}
+.sp-opts{display:flex;flex-direction:column;gap:7px;margin:10px 0;font-size:13px;color:#333}
+.sp-opts label.cb{display:flex;gap:6px;align-items:center}
+.sp-res{display:flex;align-items:center;gap:12px;margin-top:10px}
+.sp-fp{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#555;word-break:break-all}
+@media(max-width:820px){.shell{flex-direction:column}.sidebar{position:static;width:100%;height:auto;flex-direction:row;overflow-x:auto;padding:8px;border-right:0;border-bottom:1px solid #dce3ed}.nav-item{flex:none;width:auto;border-left:0;border-bottom:3px solid transparent;border-radius:6px}.nav-item.active{border-bottom-color:#4a90d9}.nav-item small,.sb-title,.sb-foot{display:none}}
+
+/* ===== v8 ===== */
+html,body{height:auto}
+body{display:block!important;min-height:0!important}
+.card{display:block!important;max-height:none!important;min-height:0!important;overflow:visible!important}
+.preview-wrap{margin-top:14px!important}
+.key-row .input-box{flex:1 1 180px;width:auto;min-width:150px}
+.key-strength{white-space:nowrap;margin-left:2px}
+.key-row .key-actions{flex-wrap:wrap}
+.view{display:none}.view.on{display:block}
+.view>.card{margin-top:12px;background:#fff}
+.view>.card:first-child{margin-top:4px}
+.drop{padding:18px 14px}.drop-ico{font-size:30px;color:#4a90d9;margin-bottom:2px}.drop .flex{margin-top:6px;gap:10px}
+.sp-sum{margin:10px 0 2px;font-size:13px;color:#35507a;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button.link{background:none;color:#c0392b;border:0;padding:0;margin:0;font-size:12px;text-decoration:underline}
+button.link:hover{background:none}
+.sp-item{background:#fff;border:1px solid #e4e8f0;border-radius:6px;margin-bottom:4px;padding:5px 8px}
+button.mini,.file-btn.mini{padding:3px 10px;font-size:12px;margin:0}
+.txt-in{margin:8px 0;font-size:13px;color:#35507a}.txt-in summary{cursor:pointer;padding:4px 0}.txt-in textarea{margin-top:6px}
+.mode-row,.carrier-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0;padding:8px 12px;background:#f0f4fa;border:1px solid #dce3ed;border-radius:6px}
+.mode-label{font-weight:500;font-size:14px;display:flex;gap:5px;align-items:center}.mode-hint,.carrier-row .key-hint{font-size:12px;color:#777}
+.seg button{margin:0;border-radius:0;background:#fff;color:#4a90d9;border:0;padding:6px 14px}.seg button.active{background:#4a90d9;color:#fff}
+.id-card{display:flex;gap:14px;align-items:center;margin:12px 0;padding:12px 14px;background:linear-gradient(135deg,#f0f4fa,#e8f0fe);border:1px solid #c5d8ed;border-radius:10px}
+.id-main{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:13px}.id-main .flex button{margin:0}
+.glyph{flex:none;border:1px solid #dce3ed;border-radius:12px;background:#fff}
+.badge{display:inline-block;background:#4a90d9;color:#fff;font-size:11px;font-weight:600;padding:2px 9px;border-radius:10px}
+.sp-fp{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:#1a5ba8;font-weight:600;word-break:break-all}
+.led-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;margin-bottom:6px;background:#fff;border:1px solid #e4e8f0;border-radius:8px}
+.led-row .glyph{border-radius:8px}.led-main{flex:1;min-width:170px}.led-note{width:150px;font-family:inherit;font-size:12px;padding:4px 8px}
+.note-box{margin:10px 0;padding:10px 12px;background:#fffbe6;border:1px solid #f0e2a0;border-radius:8px;font-size:13px}
+.dl-box{max-width:440px}.dl-head{display:flex;gap:12px;align-items:center;margin:10px 0 14px}
+.dl-name{display:flex;align-items:center;gap:6px}.dl-ext{font-family:ui-monospace,Menlo,monospace;background:#e8f0fe;color:#1a5ba8;padding:7px 11px;border-radius:6px;border:1px solid #c5d8ed;font-weight:700}
+.manual{margin-top:12px;padding:10px 12px;background:#fff8ec;border:1px solid #ffd9a0;border-radius:10px}.warn-bar{font-size:13px;line-height:1.7;margin-bottom:8px;color:#7a4b00}.man-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}.man-btns button{margin:0;font-size:13px;padding:8px 6px}#dlLink{word-break:break-all;color:#1a5ba8}.dl-box{max-height:92vh;overflow-y:auto}.dl-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}.dl-btns button{margin:0}
+#toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:#1f2d44;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:10000;max-width:86vw}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+.sb-foot b{color:#1a5ba8}
+@media(max-width:900px),(max-height:520px){.shell{flex-direction:column}.sidebar{position:static;width:100%;height:auto;flex-direction:row;overflow-x:auto;padding:8px;border-right:0;border-bottom:1px solid #dce3ed;gap:4px}.nav-item{flex:none;width:auto;border-left:0;border-bottom:3px solid transparent;border-radius:6px;padding:7px 12px}.nav-item.active{border-bottom-color:#4a90d9}.nav-item small,.sb-title,.sb-foot{display:none}.content{padding:14px 12px}}
+@media(max-width:560px){.id-card{flex-direction:column;align-items:flex-start}.led-note{width:100%}}
+
+/* ===== 点击反馈：去掉浏览器默认蓝色/灰色点击框，换成按压 + 涟漪 ===== */
+*{-webkit-tap-highlight-color:transparent}
+button,.file-btn,.drop,summary,.tab-bar button,.seg button,label.file-btn{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+button,.file-btn,.drop,summary,a{outline:none}
+button:focus,.file-btn:focus,summary:focus,a:focus{outline:none}
+button:focus-visible,.file-btn:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid #4a90d9;outline-offset:2px}
+button,.file-btn,.drop{position:relative;overflow:hidden;transition:transform .12s ease,filter .12s ease,box-shadow .15s ease,background .15s ease,border-color .15s ease,color .15s ease}
+button:not(:disabled):active,.file-btn:active{transform:scale(.95);filter:brightness(.88);box-shadow:inset 0 2px 6px rgba(0,0,0,.18)}
+button.secondary:not(:disabled):active,.file-btn:active{background:#d4e5fa;filter:none;box-shadow:inset 0 2px 6px rgba(26,91,168,.22)}
+button.link:active{transform:none;filter:none;box-shadow:none;opacity:.6}
+.drop:active{transform:scale(.99);background:#e6f0fc;border-color:#4a90d9}
+summary{transition:background .15s}
+summary:active{background:rgba(74,144,217,.14);border-radius:6px}
+.tab-bar button:active,.seg button:active{transform:scale(.97)}
+.led-row:active{background:rgba(74,144,217,.08)}
+button:disabled{cursor:not-allowed;opacity:.55}
+.sp-ripple{position:absolute;border-radius:50%;background:currentColor;opacity:.28;transform:scale(0);pointer-events:none;animation:sp-rip .55s ease-out forwards}
+@keyframes sp-rip{to{transform:scale(1);opacity:0}}
+.sp-done{animation:sp-pop .35s ease}
+@keyframes sp-pop{0%{box-shadow:0 0 0 0 rgba(74,144,217,.55)}100%{box-shadow:0 0 0 10px rgba(74,144,217,0)}}
+@media (prefers-reduced-motion:reduce){.sp-ripple,.sp-done{animation:none;display:none}button:not(:disabled):active,.file-btn:active{transform:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar"><div class="sb-title">功能导航</div>
+<button type="button" class="nav-item active" data-v="sp"><span class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4M12 15v2"/></svg></span><span>孢子封印<small>.sp 加密 · 文件/文件夹</small></span></button>
+<button type="button" class="nav-item" data-v="im"><span class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span><span>图片隐写<small>同一内核 · 藏进图片</small></span></button>
+<button type="button" class="nav-item" data-v="op"><span class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/></svg></span><span>解密 · 还原<small>.sp / 图片 · 预览下载</small></span></button>
+<div class="sb-foot"><b id="sbLed">封印档案：0 条</b><br>纯本地处理<br>数据永不离开本机</div></aside>
+<main class="content">
+
+    <div class="app-header">
+    <h1>
+    <span class="ico spore-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="sporeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#10b981" />
+                    <stop offset="100%" stop-color="#06b6d4" />
+                </linearGradient>
+            </defs>
+            <path d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z"
+                  stroke="url(#sporeGradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            <path d="M10 9.5H13L14.5 11V14.5C14.5 14.7761 14.2761 15 14 15H10C9.72386 15 9.5 14.7761 9.5 14.5V10C9.5 9.72386 9.72386 9.5 10 9.5Z"
+                  stroke="url(#sporeGradient)" stroke-width="1.5" fill="none" stroke-linejoin="round" />
+            <path d="M13 9.5V11H14.5" stroke="url(#sporeGradient)" stroke-width="1.5" fill="none" stroke-linejoin="round" />
+            <path d="M18 3L6 21" stroke="url(#sporeGradient)" stroke-width="2" stroke-linecap="round" />
+        </svg>
+    </span>
+    <span class="title-en">Spore Protocol</span>
+    <span class="title-cn">孢子协议</span>
+    <span class="enc-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6z"/><path d="M9 12l2 2 4-4"/></svg> SP-1 · AES-256-GCM</span>
+</h1>
+    <p class="slogan">让数据如孢子般伪装、生存并自由传递</p>
+    <p class="info" id="hdrInfo">将任意文件（或文字内容）编码为 PNG 图片（每 3 字节 → 1 个 RGB 像素），或从其生成的图片中还原原文件并即时预览。<strong>使用 AES-256-GCM + PBKDF2 加密，防篡改、抗审查</strong></p>
+
+    <!-- 右上角操作按钮 -->
+    <div class="header-actions">
+        <button type="button" id="btnClear" class="secondary" title="清除所有内容">
+            <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+            清除
+        </button>
+        <button type="button" id="btnUsage" class="secondary" title="使用说明">
+            <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 7h8M8 11h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+            使用说明
+        </button>
+    </div>
+    </div><!-- /.app-header -->
+
+<div id="views">
+<section class="view" id="v-sp"><div class="card"><h2>① 孢子封印 · 任意文件 / 文件夹 → .sp</h2><div id="spForm"></div></div>
+<div class="card"><h2>封印档案 · 指纹记录</h2><div id="ledBody"></div></div></section>
+<section class="view" id="v-im"><div class="card"><h2>② 图片隐写 · 封印后藏进图片</h2><div id="imForm"></div></div></section>
+<section class="view" id="v-op"><div class="card"><h2>③ 解密 · 还原（.sp 与隐写图片通用）</h2><div id="opForm"></div></div></section>
+</div>
+</main></div><!-- /.shell -->
+    <div class="modal-overlay" id="dlModal"><div class="modal-box dl-box"><h3><span class="ico"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></span> <span id="dlTitle">保存文件</span></h3>
+<div class="dl-head" id="dlHead"></div><label class="info" for="dlName">文件名（可修改）</label>
+<div class="dl-name"><input id="dlName" class="input-box" autocomplete="off" spellcheck="false"><span class="dl-ext" id="dlExt">.sp</span></div>
+<div class="key-hint" id="dlHint" style="margin-top:6px"></div><div class="key-hint" id="dlStatus" style="margin-top:6px"></div>
+<div class="manual" id="dlManual" style="display:none"><div class="warn-bar" id="dlWarn"></div><div class="man-btns"><button type="button" class="secondary" id="dlShare">① 系统分享 / 存到“文件”</button><button type="button" class="secondary" id="dlData">② 换一种方式下载</button><button type="button" class="secondary" id="dlWin">③ 在新窗口打开</button><button type="button" class="secondary" id="dlCopyTxt">④ 复制全部文本</button></div><div class="key-hint" style="margin-top:8px">也可以长按 / 右键这个链接，选“下载链接 / 另存为”：<a id="dlLink" download></a></div></div>
+<div class="dl-btns"><button type="button" class="secondary" id="dlCopy">复制指纹</button><button type="button" class="secondary" id="dlCancel">取消</button><button type="button" id="dlSave">保存</button></div></div></div>
+<div id="toast"></div>
+    <!-- 使用说明弹窗 -->
+    <div class="modal-overlay" id="usageModalOverlay">
+        <div class="modal-box usage-modal">
+            <h3><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z"/></svg></span> 使用说明</h3>
+<h4><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg></span> 一、这个工具能做什么？</h4>
+<p>简单来说，这是一个能帮你把秘密“藏”起来、锁起来的工具。左侧导航栏有三个功能：</p>
+<ul><li><strong>孢子封印（首页）</strong>：把任意文件、多个文件、整个文件夹，一起加密成一个 <strong>.sp 文件</strong>。.sp 是本工具独创的格式，只有本工具能生成、也只有本工具能打开。</li>
+<li><strong>图片隐写</strong>：用<strong>同一套加密</strong>封印后，再把数据藏进图片里——要么是一张噪点图，要么是藏进一张正常的照片，肉眼看不出区别。</li>
+<li><strong>解密 · 还原</strong>：.sp 文件和隐写图片共用这一个入口，自动识别类型，还原后可直接预览、下载，多个文件还能一键打包 ZIP。</li></ul>
+<h4><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span> 二、安全性说明</h4>
+<ul>
+<li><strong>文件绝不离开你的设备</strong>：所有处理都在你自己的浏览器里完成，没有服务器、没有上传，断网也能用。</li>
+<li><strong>顶级加密</strong>：密码先经 PBKDF2-SHA512 反复加固 100 万轮，再拆分出加密钥匙和校验钥匙，然后用 AES-256-GCM 按块加密。每一块的顺序和“是否最后一块”都被认证，调换、删减、截断都会被发现。文件名、文件数量、附言全部在加密内部。</li>
+<li><strong>密码是唯一的钥匙</strong>：忘记密码（或丢了密钥文件）就永远打不开，没有任何找回办法。请用密码管理器保管。</li>
+<li><strong>防篡改</strong>：哪怕改动一个字节，解密都会失败并明确提示；密码错误会在读取数据之前就被识别。</li></ul>
+<h4><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4M12 15v2"/></svg></span> 三、孢子封印（.sp）怎么用</h4>
+<div class="usage-steps"><ul>
+<li><strong>第一步：添加内容</strong> &mdash; 把文件或文件夹拖进虚线框，或点“选择文件 / 选择文件夹”；也可展开“直接输入文字”。添错了点 × 移除，或“全部移除”。</li>
+<li><strong>第二步：设置密码</strong> &mdash; 至少 8 位，建议点“生成”获得随机强密码。还可以再选一个“密钥文件”（任意文件），这样必须同时拥有密码和这个文件才能解开（双因素）。</li>
+<li><strong>第三步：封印</strong> &mdash; 点“封印为 .sp”，稍等片刻（百万轮加固是故意的慢）。完成后会弹出<strong>保存窗口</strong>，可以修改文件名，扩展名固定为 .sp，不会被浏览器改成 .txt。</li></ul></div>
+<p>.sp 文件本身是一段 Base64 文本（开头有 BEGIN 标记和指纹），所以也可以复制粘贴发送：结果卡片里的“复制 .sp 文本”可直接贴进聊天，对方在解密页的“粘贴 .sp 文本”框里粘贴即可。封印完成后还会自动自检一遍。“先压缩再加密”默认开启，能让体积更小；“附言”会加密保存，解密时显示。</p>
+<h4><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span> 四、图片隐写怎么用</h4>
+<p>操作和封印完全一样（文件、文件夹、文字、密码、密钥文件都支持），只多一个选择：</p>
+<ul><li><strong>像素图（噪点图）</strong>：生成一张看起来像雪花噪点的独立图片，容量不限，适合大文件。</li>
+<li><strong>LSB 藏进照片</strong>：选一张正常照片做“载体”，数据藏进像素的最低位，成品和原图看起来一模一样。选好照片后会显示它最多能藏多少。照片分辨率越高，能藏得越多。</li></ul>
+<ul class="usage-warning"><li>隐写图片必须保持原样：不要发“图片”，要发“文件”；微信、QQ、朋友圈会压缩画质，数据会永久损坏。</li>
+<li>容量不够时换一张更大的照片，或改用像素图。</li></ul>
+<h4><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span> 五、解密 · 还原怎么用</h4>
+<div class="usage-steps"><ul>
+<li><strong>第一步：放入文件</strong> &mdash; 拖入或选择 .sp 文件，或者隐写图片。系统自动识别类型，并立刻显示它的<strong>指纹徽章</strong>（此时还不需要密码）。</li>
+<li><strong>第二步：输入密码</strong> &mdash; 必要时再选密钥文件。如果发送方另外告诉了你指纹，可以填进“核对指纹”，不一致会拒绝解密。</li>
+<li><strong>第三步：解密并还原</strong> &mdash; 每个文件都可以“预览”（图片、视频、音频、文本、PDF、压缩包都支持）或“下载”（同样有可改名的保存窗口）；多个文件可“全部打包为 ZIP”，目录结构会保留。</li></ul></div>
+<h4><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span> 六、指纹：每个封印的“身份证”</h4>
+<p>每次封印都会得到一个独一无二的<strong>指纹</strong>（16 位十六进制）和一枚由它生成的<strong>孢子徽章</strong>。它直接来自文件头，不需要密码就能看到，别人无法伪造出同样的指纹。</p>
+<ul><li><strong>封印档案</strong>：首页下方自动记录你封印过的指纹（只存指纹、时间、数量、大小和你写的备注，不存文件名和内容）。以后收到文件时，系统会自动告诉你“这是不是你封印过的”。</li>
+<li><strong>核对指纹</strong>：把指纹通过微信、电话等另一个渠道告诉对方，对方解密前填入核对，就能确认拿到的是同一份、没被调包。</li>
+<li><strong>复制指纹</strong>：保存窗口、结果卡片、档案里都有“复制指纹”按钮。</li></ul>
+<h4><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span> 七、应用场景推荐</h4>
+<ul><li><strong>私密日记 / 备忘录</strong>：藏进一张普通的风景照里。</li><li><strong>敏感文件传输</strong>：整个文件夹封成一个 .sp 发出去，对方用指纹核对。</li><li><strong>密码本、证件、合同备份</strong>：加密后放进云盘或 U 盘。</li><li><strong>双重伪装</strong>：先封印成 .sp，再把它当作文件放进“图片隐写”，既加密又隐身。</li><li><strong>趣味惊喜</strong>：把一段表白文字藏进合照里发给朋友。</li></ul>
+<h4><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></span> 八、注意事项与常见问题</h4>
+<ul>
+<li><strong>提示“文件头被篡改”？</strong> 通常是密码或密钥文件不对（注意多余空格、大小写）；也可能文件被改过。</li>
+<li><strong>提示“数据块认证失败”？</strong> 文件在传输中损坏或被截断；隐写图片则可能被社交软件压缩过。</li>
+<li><strong>点“保存”没反应 / 下载成了 .txt？</strong> 本工具会逐级尝试：系统“另存为” → 自动下载 → 手机上自动弹出备用方式（系统分享/存到“文件”、换一种方式下载、新窗口打开、复制全部文本）。微信、QQ、UC 等内置浏览器一般不让网页下载，请点右上角“在浏览器中打开”，或用备用方式。保存时务必把文件名设为 <b>.sp</b>；万一被改名也没关系，解密不看扩展名。</li>
+<li><strong>文件大小</strong>：所有处理都在内存里完成，建议单次不超过 1～2 GB，更大请分批。ZIP 打包不支持超过 4 GB。</li>
+<li><strong>浏览器</strong>：请用较新的 Chrome / Edge / Safari。“压缩”不被支持时会自动跳过。</li>
+<li><strong>横屏 / 切换应用后文件没了？</strong> 页面会自动从已选的输入框恢复列表；若仍丢失，重新选择即可。</li></ul>
+<h4><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span> 九、安全建议</h4>
+<ol style="margin: 8px 0 8px 20px; padding: 0;">
+<li style="margin: 6px 0; font-size: 14px; line-height: 1.6;"><strong>密码要够长够复杂</strong>：至少 12 位，大小写、数字、符号混用，或直接用“生成”。</li>
+<li style="margin: 6px 0; font-size: 14px; line-height: 1.6;"><strong>密码和 .sp 分开发送</strong>：不要在同一个聊天窗口里发文件和密码，指纹也建议走另一条渠道。</li>
+<li style="margin: 6px 0; font-size: 14px; line-height: 1.6;"><strong>用完及时删除</strong>：解密成功后，不再需要的封印文件和隐写图片请及时清理；公用电脑用完点右上角“清除”，必要时清空封印档案。</li>
+<li style="margin: 6px 0; font-size: 14px; line-height: 1.6;"><strong>定期测试备份</strong>：重要备份隔一段时间试着解密一次，确保密码仍然有效。</li></ol>
+<div style="text-align:right; margin-top:16px;"><button class="btn-close-modal" id="usageModalCloseBtn">我知道了</button></div>
+        </div>
+    </div>
+
+    <script>
+const fmtSize = b => b<1024?'':(b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(2)+' MB');
+const escapeHtml = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const getFileExt = n => { if (!n) return ''; const i=n.lastIndexOf('.'); return i<0 ? '' : n.slice(i); };
+const LSB_HEAD = 6;
+function lsbCapacity(px){ return Math.floor(px*3/8) - LSB_HEAD; }
+function setBit1(b,n,v){ return v ? (b|(1<<n)) : (b&(~(1<<n))); }
+function lsbEncode(carr, cw, ch, payload){
+            const totalPx = cw*ch, max = lsbCapacity(totalPx);
+            if (!payload.length) throw new Error('payload 为空');
+            if (payload.length > max) throw new Error('载体容量不足：需藏 '+payload.length+' 字节，当前 '+cw+'×'+ch+' 最多可藏 '+max+' 字节');
+            const out = new Uint8ClampedArray(carr);
+            const len = payload.length;
+            const data = new Uint8Array(LSB_HEAD + len);
+            const _dvH = new DataView(data.buffer); _dvH.setUint32(0, len>>>0, true); _dvH.setUint16(4, Math.floor(len/0x100000000), true);
+            data.set(payload, LSB_HEAD);
+            let bitIdx = 0; const totalBits = data.length*8;
+            for (let px=0;px<totalPx;px++){
+                const b = px*4;
+                for (let c=0;c<3;c++){ if(bitIdx>=totalBits) break;
+                    const bi=Math.floor(bitIdx/8), bo=bitIdx%8;
+                    out[b+c] = setBit1(out[b+c], 0, (data[bi]>>bo)&1); bitIdx++;
+                }
+                if (bitIdx>=totalBits) break;
+            }
+            for (let px=0;px<totalPx;px++){ if(out[px*4+3]===0) out[px*4+3]=255; }
+            return out;
+        }
+function lsbDecode(pix, w, h){
+            const totalPx = w*h;
+            const headBits = LSB_HEAD*8; let bitIdx=0;
+            const hb = new Uint8Array(LSB_HEAD);
+            for (let px=0;px<totalPx;px++){ const b=px*4;
+                for (let c=0;c<3;c++){ if(bitIdx>=headBits) break;
+                    const bi=Math.floor(bitIdx/8), bo=bitIdx%8;
+                    hb[bi] = setBit1(hb[bi], bo, pix[b+c]&1); bitIdx++;
+                } if(bitIdx>=headBits) break;
+            }
+            const _dvD = new DataView(hb.buffer); const _lo=_dvD.getUint32(0,true), _hi=_dvD.getUint16(4,true); const len = _lo + _hi*0x100000000;
+            const max = lsbCapacity(totalPx);
+            if (!Number.isFinite(len)||len<=0||len>max) throw new Error('LSB 提取失败：长度头异常(len='+len+')，可能非本工具 LSB 编码的载体');
+            const payload = new Uint8Array(len);
+            bitIdx=0; let written=0; const need=headBits+len*8;
+            outer: for (let px=0;px<totalPx;px++){ const b=px*4;
+                for (let c=0;c<3;c++){ if(bitIdx<headBits){bitIdx++;continue;}
+                    if((bitIdx-headBits)>=len*8) break outer;
+                    const bi=Math.floor((bitIdx-headBits)/8), bo=(bitIdx-headBits)%8;
+                    payload[bi] = setBit1(payload[bi], bo, pix[b+c]&1); bitIdx++;
+                    if (bo===7) written++;
+                }
+            }
+            if (written<len) throw new Error('LSB 数据不足：'+written+'/'+len+' 字节');
+            return { payload, length: len };
+        }
+async function loadCarrierAsPNG(file){
+            const raw = await createImageBitmap(file);
+            const cv=document.createElement('canvas'); cv.width=raw.width; cv.height=raw.height;
+            const ctx=cv.getContext('2d'); ctx.drawImage(raw,0,0);
+            const id=ctx.getImageData(0,0,raw.width,raw.height); const d=id.data; for(let i=3;i<d.length;i+=4) d[i]=255; ctx.putImageData(id,0,0);
+            const pngBlob = await new Promise(res=>cv.toBlob(res,'image/png'));
+            if (!pngBlob) throw new Error('载体转为 PNG 失败');
+            return await createImageBitmap(pngBlob);
+        }
+function checkPasswordStrength(pwd) {
+            if (!pwd) return { level: '', text: '' };
+            let score = 0;
+            if (pwd.length >= 8) score++;
+            if (pwd.length >= 12) score++;
+            if (pwd.length >= 16) score++;
+            if (/[a-z]/.test(pwd)) score++;
+            if (/[A-Z]/.test(pwd)) score++;
+            if (/[0-9]/.test(pwd)) score++;
+            if (/[^a-zA-Z0-9]/.test(pwd)) score++;
+            if (score <= 2) return { level: 'strength-weak', text: '弱' };
+            if (score <= 4) return { level: 'strength-medium', text: '中' };
+            return { level: 'strength-strong', text: '强' };
+        }
+function generateSecureKey() {
+            const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+            const keyLength = 43;
+            const charsetLen = charset.length;
+            // 拒绝采样消除模偏差，确保每个字符等概率被选中
+            const maxValid = 256 - (256 % charsetLen);
+            const keyBytes = new Uint8Array(keyLength * 2);
+            crypto.getRandomValues(keyBytes);
+            let key = '';
+            let outIdx = 0;
+            for (let i = 0; i < keyBytes.length && outIdx < keyLength; i++) {
+                const val = keyBytes[i];
+                if (val < maxValid) {
+                    key += charset[val % charsetLen];
+                    outIdx++;
+                }
+            }
+            return key;
+        }
+const SVG_PATHS = {
+            package: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 3v18M3 12h18"/>',
+            key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7h4v4"/>',
+            'file-plus': '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 14v4M10 16h4"/>',
+            pencil: '<path d="M12 20h9M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z"/>',
+            'file-text': '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+            download: '<path d="M12 4v12M8 12l4 4 4-4M4 20h16"/>',
+            check: '<path class="fill" d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/>',
+            alert: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h0"/>',
+            search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+            music: '<path d="M9 18V6l12-3v12"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/>',
+            archive: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 14h6"/>',
+            image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+            android: '<path d="M7 9h10v6H7z"/><path d="M9 6V4M15 6V4M7 15c0 3-1 4-2 4M17 15c0 3 1 4 2 4M9 21h6"/>',
+            code: '<path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/>',
+            gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+            box: '<path d="M21 8L12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>'
+        };
+        
+function svgIcon(name, extraClass){
+            const p = SVG_PATHS[name] || SVG_PATHS['file-text'];
+            return '<span class="ico'+(extraClass?' '+extraClass:'')+'" aria-hidden="true"><svg viewBox="0 0 24 24">'+p+'</svg></span>';
+        }
+const isImageExt=e=>['.png','.jpg','.jpeg','.gif','.webp','.bmp','.svg','.ico'].includes(e);
+        const isVideoExt=e=>['.mp4','.webm','.ogg','.ogv','.mov','.m4v','.avi'].includes(e);
+        const isAudioExt=e=>['.mp3','.wav','.ogg','.oga','.flac','.m4a','.aac','.opus'].includes(e);
+        const isTextExt=e=>['.txt','.md','.json','.xml','.html','.htm','.css','.js','.ts','.py','.lua','.c','.h','.cpp','.cs','.java','.go','.rs','.rb','.php','.sh','.yml','.yaml','.toml','.ini','.cfg','.log','.csv','.sql'].includes(e);
+        const isArchiveExt=e=>['.zip','.apk','.jar','.xapk','.aab','.apks','.ipa','.docx','.xlsx','.pptx'].includes(e);
+        
+let _zipLibPromise=null;
+/* 按文件名推断真实 MIME：封装应用(WebToApp 等)会按 MIME 决定存入相册/视频/下载目录，类型不符会保存失败 */
+const MIME_EXT={jpg:'image/jpeg',jpeg:'image/jpeg',jpe:'image/jpeg',jfif:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',bmp:'image/bmp',svg:'image/svg+xml',ico:'image/x-icon',tif:'image/tiff',tiff:'image/tiff',heic:'image/heic',heif:'image/heif',avif:'image/avif',
+mp4:'video/mp4',m4v:'video/mp4',mov:'video/quicktime',webm:'video/webm',mkv:'video/x-matroska',avi:'video/x-msvideo','3gp':'video/3gpp',mpg:'video/mpeg',mpeg:'video/mpeg',
+mp3:'audio/mpeg',wav:'audio/wav',ogg:'audio/ogg',oga:'audio/ogg',flac:'audio/flac',m4a:'audio/mp4',aac:'audio/aac',opus:'audio/opus',amr:'audio/amr',
+pdf:'application/pdf',zip:'application/zip',rar:'application/vnd.rar','7z':'application/x-7z-compressed',gz:'application/gzip',tar:'application/x-tar',
+txt:'text/plain',md:'text/markdown',csv:'text/csv',html:'text/html',htm:'text/html',css:'text/css',js:'text/javascript',json:'application/json',xml:'application/xml',
+doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',ppt:'application/vnd.ms-powerpoint',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',apk:'application/vnd.android.package-archive'};
+const mimeOf=n=>{const m=/\.([A-Za-z0-9]+)$/.exec(n||'');return m?(MIME_EXT[m[1].toLowerCase()]||''):''};
+function getMime(e){return ({'.mp4':'video/mp4','.webm':'video/webm','.mp3':'audio/mpeg','.wav':'audio/wav','.ogg':'audio/ogg','.flac':'audio/flac'}[e]||'');}
+function badgeFor(e){return ({'.py':'Python','.js':'JavaScript','.ts':'TypeScript','.json':'JSON','.html':'HTML','.css':'CSS','.md':'Markdown','.txt':'Text'}[e.replace('.','')]||'Text');}
+function looksLikeText(buf){ if(!buf.length) return false; const len=Math.min(buf.length,512); let ok=0; for(let i=0;i<len;i++){const b=buf[i];if(b===0)return false;if((b>=32&&b<127)||b===9||b===10||b===13)ok++;} return ok/len>0.9; }
+function getZipLib(){
+            if (_zipLibPromise) return _zipLibPromise;
+            _zipLibPromise = new Promise(resolve=>{
+                const lib = {
+                    listZip(buf){
+                        const dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength); const entries=[];
+                        let eocd=-1; for(let i=buf.length-22;i>=0&&i>buf.length-66000;i--){if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;}}
+                        if(eocd<0) throw new Error('未找到 EOCD 记录');
+                        const cdSize=dv.getUint32(eocd+12,true), cdOff=dv.getUint32(eocd+16,true), num=dv.getUint16(eocd+10,true);
+                        let p=cdOff; for(let i=0;i<num;i++){ if(p+46>buf.length) break; const sig=dv.getUint32(p,true); if(sig!==0x02014b50) break;
+                            const compSize=dv.getUint32(p+20,true), uncSize=dv.getUint32(p+24,true), nameLen=dv.getUint16(p+28,true), extraLen=dv.getUint16(p+30,true), commLen=dv.getUint16(p+32,true);
+                            const nameBytes=buf.slice(p+46,p+46+nameLen); let name=''; try{name=new TextDecoder().decode(nameBytes);}catch(_){}
+                            entries.push({name,size:uncSize}); p+=46+nameLen+extraLen+commLen;
+                        }
+                        return entries;
+                    }
+                };
+                resolve(lib);
+            });
+            return _zipLibPromise;
+        }
+function renderPreview(buf, name, size){
+            const wrap=document.getElementById('previewWrap'),body=document.getElementById('previewBody'),title=document.getElementById('pvTitle'),meta=document.getElementById('pvMeta');
+            wrap.style.display='block'; title.innerHTML=svgIcon('search')+' '+escapeHtml(name); meta.textContent=size+' bytes'+(fmtSize(size)?' · '+fmtSize(size):'');
+            const ext=(getFileExt(name)||'').toLowerCase(), mime=getMime(ext);
+            body.innerHTML='';
+            try {
+                if (isImageExt(ext))        return pvImage(body, buf, name);
+                if (isVideoExt(ext))        return pvVideo(body, buf, name, mime);
+                if (isAudioExt(ext))        return pvAudio(body, buf, name, mime);
+                if (isTextExt(ext))         return pvText(body, buf, name, ext);
+                if (ext==='.pdf')           return pvPdf(body, buf, name);
+                if (isArchiveExt(ext))      return pvArchive(body, buf, name, ext);
+                if (looksLikeText(buf))     return pvText(body, buf, name, ext||'.txt');
+                return pvGeneric(body, buf, name, ext);
+            } catch(e){ body.innerHTML='<div class="pv-placeholder">预览失败：'+escapeHtml(e.message)+'</div>'; }
+        }
+function pvImage(body, buf){
+            const url=URL.createObjectURL(new Blob([buf])); const img=new Image(); img.onload=()=>{body.innerHTML=
+                '<div class="pv-image"><img src="'+url+'" alt=""><div class="pv-info">'+img.naturalWidth+' × '+img.naturalHeight+'</div></div>';}; img.onerror=()=>{body.innerHTML='<div class="pv-placeholder">图片解码失败</div>';}; img.src=url;
+        }
+function pvVideo(body, buf, name, mime){
+            const url=URL.createObjectURL(new Blob([buf],{type:mime||'video/mp4'}));
+            body.innerHTML='<div class="pv-video"><div class="video-frame"><video controls preload="metadata" controlslist="nodownload" style="border-radius:12px;" src="'+url+'"></video></div></div>';
+        }
+function pvAudio(body, buf, name, mime){
+            const url=URL.createObjectURL(new Blob([buf],{type:mime||'audio/mpeg'}));
+            body.innerHTML='<div class="pv-audio"><div class="audio-cover">'+svgIcon('music')+'</div><div class="audio-title">'+escapeHtml(name)+'</div><audio controls preload="metadata" src="'+url+'"></audio></div>';
+        }
+function pvText(body, buf, name, ext){
+            const text=new TextDecoder('utf-8',{fatal:false}).decode(buf); const lang=badgeFor(ext);
+            const safe=escapeHtml(text.length>80000?text.slice(0,80000)+'\n\n…（文件过大，仅显示前 80000 字符）':text);
+            body.innerHTML='<div class="pv-text"><span class="pv-lang-badge">'+lang+'</span><pre>'+safe+'</pre></div>';
+        }
+function pvPdf(body, buf, name){
+            const url=URL.createObjectURL(new Blob([buf],{type:'application/pdf'}));
+            body.innerHTML='<div class="pv-generic"><iframe src="'+url+'" style="width:100%;height:460px;border:1px solid #ddd;border-radius:8px;"></iframe></div>';
+        }
+async function pvArchive(body, buf, name, ext){
+            body.innerHTML='<div class="pv-archive"><div class="arch-summary">'+svgIcon('archive')+' 正在解析结构…</div><div class="arch-list" id="archList"><div class="arch-empty">解析中…</div></div></div>';
+            try {
+                const { listZip } = await getZipLib();
+                let entries; try { entries = listZip(buf); } catch(e){ throw new Error('不是有效的归档：'+e.message); }
+                const list=body.querySelector('.arch-list');
+                let html='';
+                for (const e of entries){ html+='<div class="arch-row"><span class="arch-name">'+escapeHtml(e.name)+'</span><span class="arch-size">'+(e.size?fmtSize(e.size):'')+'</span></div>'; }
+                list.innerHTML=html||'<div class="arch-empty">（空归档）</div>';
+            } catch(e){ body.querySelector('.arch-list').innerHTML='<div class="arch-empty">解析失败：'+escapeHtml(e.message)+'</div>'; }
+        }
+function pvGeneric(body, buf, name, ext){
+            const slice=buf.slice(0,4096); let hex=''; for (let i=0;i<slice.length;i+=16){ const off=i.toString(16).padStart(8,'0'); let hs='',acs=''; for(let j=0;j<16;j++){if(i+j<slice.length){const b=slice[i+j];hs+=(b<16?'0':'')+b.toString(16)+' ';acs+=b>=32&&b<127?String.fromCharCode(b):'.';}else{hs+='   ';}} hex+=off+'  '+hs.padEnd(16*3+2,'')+' '+acs+'\n'; }
+            body.innerHTML='<div class="pv-generic"><div class="generic-icon">'+svgIcon('file-text')+'</div><div class="generic-name">'+escapeHtml(name)+'</div><div class="generic-meta">'+escapeHtml(ext||'未知类型')+' · '+buf.length+' bytes</div><details style="margin-top:12px;text-align:left;"><summary style="cursor:pointer;font-size:12px;color:#4a90d9;">查看十六进制 (前 4KB)</summary><div class="pv-hex" style="margin-top:8px;"><pre>'+escapeHtml(hex)+'</pre></div></details></div>';
+        }
+(function(){
+'use strict';
+const $=id=>document.getElementById(id),enc=new TextEncoder(),dec=new TextDecoder();
+const MAGIC=[0x89,0x53,0x50,0x4F,0x52,0x45,0x0D,0x0A],HLEN=79,ITER=1000000,CS_LOG=18;
+const AB='-----BEGIN SPORE SEALED FILE-----',AE='-----END SPORE SEALED FILE-----';
+const fmt=b=>b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':b<1073741824?(b/1048576).toFixed(2)+' MB':(b/1073741824).toFixed(2)+' GB';
+const cat=(...a)=>{const o=new Uint8Array(a.reduce((n,x)=>n+x.length,0));let p=0;for(const x of a){o.set(x,p);p+=x.length}return o};
+const u32=n=>{const b=new Uint8Array(4);new DataView(b.buffer).setUint32(0,n);return b};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=escapeHtml;
+const IC={lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4M12 15v2"/>',file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',img:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/>',dl:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',up:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',unlock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/>'};
+const ICON=p=>`<span class="ico"><svg viewBox="0 0 24 24">${IC[p]||p}</svg></span>`;
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2600)}
+let urls=[];const mkUrl=b=>{const u=URL.createObjectURL(b);urls.push(u);return u};
+/* ===== 强制复制：Clipboard API → execCommand → 手动复制弹窗 ===== */
+function legacyCopy(t,el){
+  let ta=el,tmp=false;
+  if(!ta){tmp=true;ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');
+    ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px;border:0;padding:0';
+    document.body.appendChild(ta)}
+  let ok=false;
+  try{
+    const ro=ta.readOnly;ta.readOnly=false;ta.focus({preventScroll:true});ta.select();
+    try{ta.setSelectionRange(0,ta.value.length)}catch(e){}
+    ok=document.execCommand('copy');ta.readOnly=ro;
+  }catch(e){ok=false}
+  if(tmp)ta.remove();
+  return ok;
+}
+async function tryCopy(t,el){
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(t);return true}}catch(e){}
+  return legacyCopy(t,el);
+}
+function copyDialog(t,title){
+  const old=document.getElementById('copyFallback');if(old)old.remove();
+  const ov=document.createElement('div');ov.id='copyFallback';
+  ov.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box';
+  const box=document.createElement('div');
+  box.style.cssText='background:#fff;color:#222;border-radius:14px;width:100%;max-width:560px;max-height:92vh;overflow:auto;padding:16px 16px 14px;box-sizing:border-box;box-shadow:0 10px 40px rgba(0,0,0,.35);font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+  const h=document.createElement('div');h.style.cssText='font-size:17px;font-weight:600;margin-bottom:4px';h.textContent='请手动复制'+(title?'：'+title:'');
+  const p=document.createElement('div');p.style.cssText='font-size:13px;color:#555;margin-bottom:8px';
+  p.textContent='当前浏览器不允许自动复制。下方内容已全选，请长按 / 右键 / Ctrl+C 复制；也可以直接编辑，或点“分享”发送到其它应用。';
+  const ta=document.createElement('textarea');ta.value=t;
+  ta.style.cssText='width:100%;height:'+(t.length>400?'42vh':'22vh')+';min-height:110px;box-sizing:border-box;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;border:1px solid #c9d2e0;border-radius:8px;padding:8px;resize:vertical;color:#222;background:#fafcff;-webkit-user-select:text;user-select:text';
+  ta.setAttribute('spellcheck','false');ta.setAttribute('autocapitalize','off');ta.setAttribute('autocorrect','off');
+  const msg=document.createElement('div');msg.style.cssText='min-height:20px;font-size:13px;color:#1a7f37;margin:6px 0 2px';
+  const row=document.createElement('div');row.style.cssText='display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end';
+  const mk=(txt,primary,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=txt;
+    b.style.cssText='border:'+(primary?'0':'1px solid #c9d2e0')+';border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer;background:'+(primary?'#4a90d9':'#f3f6fb')+';color:'+(primary?'#fff':'#222');
+    b.onclick=fn;row.appendChild(b);return b};
+  const selAll=()=>{ta.focus();ta.select();try{ta.setSelectionRange(0,ta.value.length)}catch(e){}};
+  const close=()=>{ov.remove();document.removeEventListener('keydown',esc,true)};
+  const esc=e=>{if(e.key==='Escape'){e.stopPropagation();close()}};
+  mk('全选',false,selAll);
+  mk('再试一次复制',false,async()=>{selAll();const ok=await tryCopy(ta.value,ta);msg.style.color=ok?'#1a7f37':'#b45309';msg.textContent=ok?'已复制 ✓':'仍无法自动复制，请长按选中后手动复制';if(!ok)selAll()});
+  if(navigator.share)mk('分享 / 发送到其它应用',false,async()=>{try{await navigator.share({title:title||'孢子封印',text:ta.value})}catch(e){if(!e||e.name!=='AbortError'){msg.style.color='#b45309';msg.textContent='系统分享不可用，请手动复制'}}});
+  mk('关闭',true,close);
+  box.append(h,p,ta,msg,row);ov.appendChild(box);document.body.appendChild(ov);
+  document.addEventListener('keydown',esc,true);
+  setTimeout(selAll,60);
+}
+const copy=async(t,title)=>{
+  t=String(t==null?'':t);
+  if(await tryCopy(t)){toast('已复制');return true}
+  copyDialog(t,title);return false;
+};
+
+/* ================= 密码学内核 SP-1 ================= */
+async function deriveKeys(pw,kf,salt,iter,pre){
+  let mat=enc.encode(pw.normalize('NFKC'));
+  if(kf)mat=cat(mat,new Uint8Array([0]),new Uint8Array(await crypto.subtle.digest('SHA-512',await kf.arrayBuffer())));
+  const base=await crypto.subtle.importKey('raw',mat,'PBKDF2',false,['deriveBits']);
+  const master=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-512',salt,iterations:iter},base,512);
+  const hk=await crypto.subtle.importKey('raw',master,'HKDF',false,['deriveBits']);
+  const hs=new Uint8Array(await crypto.subtle.digest('SHA-256',pre));
+  const d=async i=>new Uint8Array(await crypto.subtle.deriveBits({name:'HKDF',hash:'SHA-512',salt:hs,info:enc.encode(i)},hk,256));
+  const k1=await d('SPORE-SP1/payload'),k2=await d('SPORE-SP1/commit');
+  return{aes:await crypto.subtle.importKey('raw',k1,'AES-GCM',false,['encrypt','decrypt']),mac:await crypto.subtle.importKey('raw',k2,{name:'HMAC',hash:'SHA-256'},false,['sign','verify'])};
+}
+function nonce(i,fin){const n=new Uint8Array(12),dv=new DataView(n.buffer);dv.setUint32(3,Math.floor(i/4294967296));dv.setUint32(7,i>>>0);n[11]=fin?1:0;return n}
+async function* chunker(stream,size){
+  const rd=stream.getReader();let buf=new Uint8Array(0);
+  for(;;){const{done,value}=await rd.read();if(done)break;buf=buf.length?cat(buf,value):value;
+    while(buf.length>size){yield[buf.slice(0,size),false];buf=buf.subarray(size)}}
+  yield[buf.slice(),true];
+}
+function parseHead(h){
+  if(h.length<HLEN||MAGIC.some((m,i)=>h[i]!==m))throw new Error('这不是有效的孢子封印数据');
+  if(h[8]!==1)throw new Error('不支持的封印版本（'+h[8]+'），请使用更新版工具');
+  const dv=new DataView(h.buffer,h.byteOffset),flags=h[9],iter=dv.getUint32(10),cs=h[14];
+  if(iter<100000||iter>10000000||cs<12||cs>24)throw new Error('文件头参数异常，数据可能已损坏');
+  return{flags,iter,cs,salt:h.slice(15,47),pre:h.slice(0,47),commit:h.slice(47,79)};
+}
+/* ---- 指纹：SHA-256(文件头+承诺) → 数字 + 徽章 ---- */
+async function fpOf(pre,commit){const h=new Uint8Array(await crypto.subtle.digest('SHA-256',cat(pre,commit)));const hex=[...h].map(b=>b.toString(16).padStart(2,'0')).join('');return{h,hex,id:hex.slice(0,16),short:hex.slice(0,16).replace(/(.{4})/g,'$1 ').trim()}}
+function glyph(h,px){
+  const hue=h[0]/255*360|0;let s=`<circle cx="40" cy="40" r="37" fill="none" stroke="hsl(${hue} 40% 82%)" stroke-dasharray="${2+h[30]%4} ${3+h[31]%4}"/>`;
+  for(let i=0;i<12;i++){const a=i/12*6.2832,r=12+h[i+1]%20,rr=1.8+h[i+13]%30/10,x=40+Math.cos(a)*r*1.2,y=40+Math.sin(a)*r*1.2;
+    s+=`<line x1="40" y1="40" x2="${x}" y2="${y}" stroke="hsl(${hue} 50% 70%)"/><circle cx="${x}" cy="${y}" r="${rr}" fill="hsl(${(hue+h[i+13]%70)%360} 70% 50%)"/>`}
+  s+=`<circle cx="40" cy="40" r="${5+h[25]%5}" fill="hsl(${hue} 70% 45%)"/>`;
+  return`<svg class="glyph" viewBox="0 0 80 80" width="${px}" height="${px}">${s}</svg>`;
+}
+/* ---- 封印 ---- */
+async function sealItems(items,o,prog){
+  const comp=o.comp&&typeof CompressionStream!=='undefined';
+  const man={v:1,t:Date.now(),note:o.note||'',e:items.map(x=>({p:x.path,s:x.file.size,m:x.file.lastModified}))};
+  const mj=enc.encode(JSON.stringify(man));
+  const plain=new Blob([enc.encode('SPC1'),u32(mj.length),mj,...items.map(x=>x.file)]);
+  let rd=0,stream=plain.stream().pipeThrough(new TransformStream({transform(c,k){rd+=c.length;k.enqueue(c)}}));
+  if(comp)stream=stream.pipeThrough(new CompressionStream('deflate-raw'));
+  prog(2,'正在加固密码（PBKDF2-SHA512 × 1,000,000）…');await sleep(40);
+  const salt=crypto.getRandomValues(new Uint8Array(32));
+  const pre=cat(new Uint8Array(MAGIC),new Uint8Array([1,(comp?1:0)|(o.kf?2:0)]),u32(ITER),new Uint8Array([CS_LOG]),salt);
+  const K=await deriveKeys(o.pw,o.kf,salt,ITER,pre);
+  const commit=new Uint8Array(await crypto.subtle.sign('HMAC',K.mac,pre));
+  const parts=[pre,commit];let i=0;
+  for await(const[c,fin]of chunker(stream,1<<CS_LOG)){
+    parts.push(new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv:nonce(i++,fin),additionalData:commit,tagLength:128},K.aes,c)));
+    if(i%8===0){prog(5+80*rd/Math.max(1,plain.size),'正在加密第 '+i+' 块…');await sleep(0)}
+  }
+  return{blob:new Blob(parts),fp:await fpOf(pre,commit),comp,plainSize:plain.size};
+}
+/* ---- 解封 ---- */
+async function unseal(blob,pw,kf,prog){
+  const hd=parseHead(new Uint8Array(await blob.slice(0,HLEN).arrayBuffer()));
+  if(hd.flags&2&&!kf)throw new Error('这个封印需要同时提供密钥文件');
+  prog(2,'正在加固密码（PBKDF2-SHA512 × '+hd.iter.toLocaleString()+'）…');await sleep(40);
+  const K=await deriveKeys(pw,hd.flags&2?kf:null,hd.salt,hd.iter,hd.pre);
+  if(!await crypto.subtle.verify('HMAC',K.mac,hd.commit,hd.pre))throw new Error('密码或密钥文件错误，或文件头已被篡改');
+  const parts=[],body=blob.size-HLEN;let i=0,used=0;
+  for await(const[c,fin]of chunker(blob.slice(HLEN).stream(),(1<<hd.cs)+16)){
+    if(c.length<16)throw new Error('数据块认证失败：文件被截断');
+    try{parts.push(new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:nonce(i++,fin),additionalData:hd.commit,tagLength:128},K.aes,c)))}
+    catch(e){throw new Error('数据块认证失败：数据被篡改、损坏或被截断（第 '+i+' 块）')}
+    used+=c.length;if(i%8===0){prog(5+80*used/Math.max(1,body),'正在解密第 '+i+' 块…');await sleep(0)}
+  }
+  prog(90,'正在还原文件…');
+  let pb=new Blob(parts);
+  if(hd.flags&1)pb=await new Response(pb.stream().pipeThrough(new DecompressionStream('deflate-raw'))).blob();
+  const h8=new Uint8Array(await pb.slice(0,8).arrayBuffer());
+  if(dec.decode(h8.slice(0,4))!=='SPC1')throw new Error('内部容器格式错误');
+  const ml=new DataView(h8.buffer).getUint32(4),man=JSON.parse(dec.decode(await pb.slice(8,8+ml).arrayBuffer()));
+  let off=8+ml;const res=man.e.map(e=>{const r={p:e.p,blob:pb.slice(off,off+e.s)};off+=e.s;return r});
+  if(off!==pb.size)throw new Error('内部容器长度不一致');
+  return{man,res};
+}
+/* ---- Base64 文本护甲（.sp 恒为文本） ---- */
+const b64=u8=>{let s='';for(let i=0;i<u8.length;i+=32768)s+=String.fromCharCode.apply(null,u8.subarray(i,i+32768));return btoa(s)};
+async function armorBlob(blob,fp){
+  const parts=[AB+'\nVersion: SP1\nFingerprint: '+fp.short+'\n\n'],S=48*2048;
+  for(let o=0;o<blob.size;o+=S){const t=b64(new Uint8Array(await blob.slice(o,o+S).arrayBuffer()));parts.push(t.replace(/(.{64})/g,'$1\n').replace(/([^\n])$/,'$1\n'))}
+  parts.push(AE+'\n');return new Blob(parts,{type:'application/octet-stream'});
+}
+const B64L=/^[A-Za-z0-9+/]+={0,2}$/;
+function unarmor(text){
+  const all=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>B64L.test(l)).join(''),out=[];
+  for(let i=0;i<all.length;i+=131072){const s=atob(all.slice(i,i+131072)),u=new Uint8Array(s.length);for(let k=0;k<s.length;k++)u[k]=s.charCodeAt(k);out.push(u)}
+  return new Blob(out);
+}
+/* ---- 图片隐写：载荷 = 封印后的二进制 ---- */
+const rnd=n=>{const u=new Uint8Array(n);for(let i=0;i<n;i+=65536)crypto.getRandomValues(u.subarray(i,Math.min(n,i+65536)));return u};
+const toPng=cv=>new Promise((r,j)=>cv.toBlob(b=>b?r(b):j(new Error('生成 PNG 失败')),'image/png'));
+async function embedImage(blob,mode,carrier){
+  const bytes=new Uint8Array(await blob.arrayBuffer());
+  if(mode==='px'){
+    const body=cat(u32(bytes.length),bytes),px=Math.ceil(body.length/3),w=Math.max(64,Math.ceil(Math.sqrt(px))),h=Math.ceil(px/w);
+    const img=new Uint8ClampedArray(w*h*4),r=rnd(w*h*3);
+    for(let i=0;i<w*h;i++){img[i*4]=r[i*3];img[i*4+1]=r[i*3+1];img[i*4+2]=r[i*3+2];img[i*4+3]=255}
+    for(let i=0;i<body.length;i++)img[((i/3)|0)*4+i%3]=body[i];
+    const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').putImageData(new ImageData(img,w,h),0,0);
+    return{png:await toPng(cv),w,h};
+  }
+  const bmp=await loadCarrierAsPNG(carrier),cv=document.createElement('canvas');cv.width=bmp.width;cv.height=bmp.height;
+  const cx=cv.getContext('2d',{willReadFrequently:true});cx.drawImage(bmp,0,0);
+  const id=cx.getImageData(0,0,bmp.width,bmp.height),w=id.width,h=id.height,max=lsbCapacity(w*h);
+  if(bytes.length>max)throw new Error('载体容量不足：需藏 '+fmt(bytes.length)+'，这张图最多可藏 '+fmt(max)+'。请换更大的照片或改用像素图');
+  const out=lsbEncode(id.data,w,h,bytes),r=rnd(w*h*3),used=(6+bytes.length)*8;
+  for(let j=used;j<w*h*3;j++){const k=((j/3)|0)*4+j%3;out[k]=(out[k]&254)|(r[j]&1)}   // 余下容量也写入随机噪声，消除"已用/未用"边界
+  cx.putImageData(new ImageData(out,w,h),0,0);
+  return{png:await toPng(cv),w,h};
+}
+async function extractImage(file){
+  let bmp;try{bmp=await createImageBitmap(file)}catch(e){throw new Error('无法识别这个文件：它既不是 .sp 封印，也不是可读取的图片')}
+  const cv=document.createElement('canvas');cv.width=bmp.width;cv.height=bmp.height;
+  const cx=cv.getContext('2d',{willReadFrequently:true});cx.drawImage(bmp,0,0);
+  const{data,width:w,height:h}=cx.getImageData(0,0,bmp.width,bmp.height),n=w*h,rgb=i=>data[((i/3)|0)*4+i%3];
+  if(n*3>12){const len=((rgb(0)<<24)|(rgb(1)<<16)|(rgb(2)<<8)|rgb(3))>>>0;
+    if(len>=HLEN&&len<=n*3-4&&MAGIC.every((m,i)=>rgb(4+i)===m)){const o=new Uint8Array(len);for(let i=0;i<len;i++)o[i]=rgb(4+i);return{bytes:o,mode:'px'}}}
+  try{const r=lsbDecode(data,w,h);if(MAGIC.every((m,i)=>r.payload[i]===m))return{bytes:r.payload,mode:'lsb'}}catch(e){}
+  throw new Error('图片中没有发现孢子封印数据（若图片被微信/QQ 压缩过，数据已丢失，请用“发送文件”方式传输）');
+}
+/* ---- 封印档案（仅存指纹/时间/数量/大小/你的备注） ---- */
+const LK='spore.ledger.v1';
+const ledger={get(){try{return JSON.parse(localStorage.getItem(LK))||[]}catch(e){return[]}},set(a){try{localStorage.setItem(LK,JSON.stringify(a.slice(0,200)))}catch(e){}},
+  add(e){this.set([e,...this.get().filter(x=>x.h!==e.h)])},find(h){return this.get().find(x=>x.h===h)},del(h){this.set(this.get().filter(x=>x.h!==h))},clear(){this.set([])},
+  note(h,l){this.set(this.get().map(x=>x.h===h?{...x,l}:x))}};
+let ledAll=false;
+function renderLedger(){
+  const a=ledger.get(),sh=ledAll?a:a.slice(0,6);
+  $('sbLed').textContent='封印档案：'+a.length+' 条';
+  $('ledBody').innerHTML=a.length?sh.map(x=>{const h=Uint8Array.from(x.h.match(/../g).map(v=>parseInt(v,16)));
+    return`<div class="led-row">${glyph(h,40)}<div class="led-main"><div class="sp-fp">${x.h.slice(0,16).replace(/(.{4})/g,'$1 ').trim()} <span class="badge">${x.k==='img'?'图片':'.sp'}</span></div><div class="key-hint">${new Date(x.t).toLocaleString()} · ${x.n} 个文件 · ${fmt(x.sz)}</div></div><input class="input-box led-note" data-h="${x.h}" value="${esc(x.l||'')}" placeholder="给自己的备注" maxlength="40"><button type="button" class="secondary mini" data-cp="${x.h}">复制指纹</button><button type="button" class="secondary mini" data-del="${x.h}">删除</button></div>`}).join('')+
+    `<div class="flex" style="margin-top:8px">${a.length>6?`<button type="button" class="secondary mini" id="ledMore">${ledAll?'收起':'显示全部 '+a.length+' 条'}</button>`:''}<button type="button" class="secondary mini" id="ledClr">清空档案</button><span class="key-hint">仅保存在本机浏览器，不含文件名和内容</span></div>`
+    :'<div class="key-hint">暂无记录。每次封印成功后，指纹会自动记在这里；之后收到文件时，系统会自动比对。</div>';
+}
+/* ================= 自制保存弹窗 ================= */
+let dlCur=null;
+function saveDlg(o){
+  dlCur=o;resetDl();$('dlTitle').textContent=o.title||'保存文件';
+  $('dlHead').innerHTML=(o.g||'')+`<div>${o.fp?`<div class="sp-fp">指纹 ${o.fp}</div>`:''}<div class="key-hint">${esc(o.meta||'')}</div></div>`;
+  $('dlName').value=o.base;$('dlExt').textContent=o.lock?o.ext:'';$('dlExt').style.display=o.lock?'':'none';
+  $('dlHint').textContent=o.lock?'扩展名固定为 '+o.ext+'（已强制，不会被浏览器改成 .txt）。可修改前面的文件名。':'可修改完整文件名（含扩展名）。';
+  $('dlCopy').style.display=o.fp?'':'none';$('dlModal').classList.add('active');setTimeout(()=>{$('dlName').focus();$('dlName').select()},60);
+}
+$('dlCopy').onclick=()=>copy('孢子封印指纹：'+dlCur.fp,'指纹');
+$('dlCancel').onclick=()=>$('dlModal').classList.remove('active');
+$('dlModal').addEventListener('click',e=>{if(e.target.id==='dlModal')$('dlModal').classList.remove('active')});
+$('dlName').addEventListener('keydown',e=>{if(e.key==='Enter')$('dlSave').click()});
+const UA=navigator.userAgent,MOBILE=/Android|iPhone|iPad|iPod|Mobile/i.test(UA),INAPP=/MicroMessenger|MQQBrowser|QQ\/|UCBrowser|UCWEB|Quark|baiduboxapp|BaiduBoxApp|DingTalk|AlipayClient|Weibo|miniProgram|FBAN|FBAV|Instagram|; wv\)/i.test(UA);
+let dlOut=null,manT=0;
+function resetDl(){clearTimeout(manT);$('dlManual').style.display='none';$('dlStatus').innerHTML='';$('dlSave').textContent='保存';$('dlCancel').textContent='取消'}
+const finish=()=>{$('dlModal').classList.remove('active');toast('已保存：'+dlOut.name)};
+function openManual(reason){
+  const{o,name,out}=dlOut;clearTimeout(manT);
+  $('dlWarn').innerHTML='⚠ '+reason+'<br>请把文件保存为 <b>'+esc(name)+'</b>'+(o.lock?'（扩展名必须是 <b>'+o.ext+'</b>，<u>不要</u>保存成 .txt）':'');
+  const a=$('dlLink');a.href=mkUrl(out);a.download=name;a.textContent=name;
+  let can=false;try{can=!!(navigator.canShare&&navigator.canShare({files:[new File([out],name,{type:out.type})]}))}catch(e){}
+  $('dlShare').style.display=can?'':'none';$('dlCopyTxt').style.display=o.ext==='.sp'?'':'none';
+  $('dlManual').style.display='block';$('dlCancel').textContent='关闭';
+}
+$('dlSave').onclick=async()=>{
+  const o=dlCur;let n=$('dlName').value.trim().replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_');
+  if(o.lock)n=n.replace(new RegExp('('+o.ext.replace('.','\\.')+'|\\.txt)+$','i'),'');
+  if(!n)n=o.base||'spore';const name=o.lock?n+o.ext:n,out=new Blob([o.blob],{type:(o.lock?o.mime:(mimeOf(name)||o.mime))||'application/octet-stream'});
+  dlOut={o,name,out};
+  /* 第 1 级：桌面浏览器 → 系统“另存为”窗口（扩展名锁定） */
+  if(window.showSaveFilePicker&&!MOBILE){
+    try{const hd=await showSaveFilePicker({suggestedName:name,types:o.lock?[{description:o.desc||'孢子封印',accept:{'application/octet-stream':[o.ext]}}]:undefined});
+      const w=await hd.createWritable();await w.write(out);await w.close();return finish()}
+    catch(e){if(e&&e.name==='AbortError')return}
+  }
+  /* 内置浏览器（微信/QQ/UC…）通常拦截网页下载 → 直接进入手动保存面板 */
+  if(INAPP)return openManual('检测到你正在使用内置浏览器（微信 / QQ / UC 等），它们一般不允许网页直接下载文件。最稳妥的办法：点右上角“在浏览器中打开”');
+  /* 第 2 级：自动触发下载 */
+  try{const a=document.createElement('a');a.href=mkUrl(out);a.download=name;a.rel='noopener';document.body.appendChild(a);a.click();a.remove()}
+  catch(e){return openManual('浏览器拒绝了直接下载')}
+  if(!MOBILE)return finish();
+  $('dlStatus').innerHTML='已发出下载请求：<b>'+esc(name)+'</b>，请留意浏览器的下载提示或通知栏。';$('dlSave').textContent='再次下载';
+  /* 第 3 级：手机上 2 秒后仍可能没反应 → 自动展开备用保存方式 */
+  manT=setTimeout(()=>openManual('如果没有看到任何下载提示，说明这个浏览器拦截了直接下载（已经开始下载的话可忽略本提示）'),2200);
+};
+$('dlShare').onclick=async()=>{const{name,out}=dlOut;try{await navigator.share({files:[new File([out],name,{type:out.type})],title:name})}catch(e){if(!e||e.name!=='AbortError')toast('系统分享失败，请换其它方式')}};
+$('dlData').onclick=()=>{const{name,out}=dlOut;if(out.size>12*1048576)return toast('文件较大，此方式不可用，请换其它方式');
+  const r=new FileReader();r.onload=()=>{const a=document.createElement('a');a.href=r.result;a.download=name;document.body.appendChild(a);a.click();a.remove();toast('已换一种方式再次尝试下载')};r.readAsDataURL(out)};
+$('dlCopyTxt').onclick=async()=>{if(dlOut.out.size>8*1048576)return toast('文本太长，请换其它方式');copy(await dlOut.out.text(),'.sp 文本')};
+$('dlWin').onclick=async()=>{
+  const{o,name,out}=dlOut,w=window.open('about:blank','_blank');
+  if(!w)return toast('新窗口被拦截：请允许本页弹出窗口，或换其它方式');
+  const isTxt=o.ext==='.sp',isImg=/^image\//.test(out.type),text=isTxt&&out.size<8*1048576?await out.text():'';
+  const warn='⚠ 请把文件保存为 <code>'+esc(name)+'</code>'+(o.lock?'<br>扩展名必须是 <b>'+esc(o.ext)+'</b>，<b>不要</b>保存成 .txt':'');
+  const d=w.document;d.open();
+  d.write('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>保存 '+esc(name)+'</title><style>body{font:15px/1.7 -apple-system,"PingFang SC",sans-serif;max-width:720px;margin:0 auto;padding:18px;color:#222}.w{background:#fff4e5;border:1px solid #ffc27a;border-radius:10px;padding:12px 14px;margin:12px 0}a.b,button{display:inline-block;background:#4a90d9;color:#fff;border:0;border-radius:8px;padding:11px 18px;font-size:15px;text-decoration:none;margin:6px 8px 6px 0}textarea{width:100%;height:40vh;font:12px monospace;border:1px solid #ccd;border-radius:8px;padding:8px;box-sizing:border-box}img{max-width:100%;border:1px solid #ddd;border-radius:8px}code{background:#eef3fb;padding:2px 6px;border-radius:4px;word-break:break-all}</style><h2>保存文件</h2><div class="w">'+warn+'</div><div id="c"></div>');
+  d.close();const c=d.getElementById('c'),nb=new w.Blob([out.size<8*1048576||!isTxt?await out.arrayBuffer():text],{type:(o.lock?'application/octet-stream':(mimeOf(name)||out.type))||'application/octet-stream'}),url=w.URL.createObjectURL(nb);
+  const a=d.createElement('a');a.className='b';a.href=url;a.download=name;a.textContent='点此下载 '+name;c.appendChild(a);
+  if(isImg){const im=d.createElement('img');im.src=url;c.appendChild(d.createElement('p')).textContent='也可以长按下方图片 → 保存图片';c.appendChild(im)}
+  if(isTxt&&text){const b=d.createElement('button');b.textContent='复制全部文本';const t=d.createElement('textarea');t.readOnly=true;t.value=text;
+    b.onclick=async()=>{try{await w.navigator.clipboard.writeText(text);b.textContent='已复制 ✓';return}catch(e){}t.readOnly=false;t.focus();t.select();try{t.setSelectionRange(0,t.value.length)}catch(e){}let ok=false;try{ok=d.execCommand('copy')}catch(e){}b.textContent=ok?'已复制 ✓':'已全选，请长按 / Ctrl+C 手动复制'};
+    c.appendChild(b);c.appendChild(d.createElement('p')).textContent='备选：复制下面的文本，粘贴进任意备忘录，再另存为 '+name+'（或直接在本工具“解密”页的粘贴框里使用）。';c.appendChild(t)}
+};
+/* ================= 表单组件 ================= */
+const pwHtml=(id,gen)=>`<div class="key-row"><label for="${id}">${ICON('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7h4v4"/>')} 密码</label><input type="password" id="${id}" class="input-box" placeholder="${gen?'输入强密码（至少 8 位）':'输入封印时设置的密码'}" autocomplete="off"><div class="key-actions">${gen?`<button type="button" class="secondary" id="${id}G">生成</button><button type="button" class="secondary" id="${id}C">复制</button>`:''}<button type="button" class="secondary" id="${id}E">显示</button></div><span class="key-strength" id="${id}S"></span></div>`;
+const progHtml=id=>`<div class="progress-wrap" id="${id}W" style="display:none"><progress id="${id}P" value="0" max="100"></progress><span class="progress-label" id="${id}L">0%</span><span class="progress-status" id="${id}T"></span></div>`;
+const kfHtml=(id,t)=>`<div class="flex"><span>${t}</span><label class="file-btn secondary mini" for="${id}">选择</label><input type="file" id="${id}" class="input-box"><span class="key-hint" id="${id}N">未选择</span></div>`;
+function wirePw(id,gen){
+  $(id+'E').onclick=()=>{const p=$(id),h=p.type==='password';p.type=h?'text':'password';$(id+'E').textContent=h?'隐藏':'显示'};
+  if(!gen)return;
+  $(id).oninput=()=>{const r=checkPasswordStrength($(id).value);$(id+'S').textContent=r.text||'';$(id+'S').className='key-strength strength-'+(r.level||'')};
+  $(id+'G').onclick=()=>{$(id).value=generateSecureKey();$(id).type='text';$(id+'E').textContent='隐藏';$(id).oninput()};
+  $(id+'C').onclick=()=>copy($(id).value,'密码');
+}
+const prog=(id,pct,msg)=>{$(id+'W').style.display='flex';$(id+'P').value=pct;$(id+'L').textContent=Math.round(pct)+'%';if(msg!=null)$(id+'T').textContent=msg};
+const say=(id,html,cls)=>{$(id+'Info').innerHTML=cls?`<span class="${cls}">${html}</span>`:html};
+const kfWire=id=>{$(id).onchange=e=>$(id+'N').textContent=e.target.files[0]?e.target.files[0].name:'未选择'};
+
+const st={sp:{items:[],gone:new Set(),last:null},im:{items:[],gone:new Set(),last:null}};
+let imMode='px',carrier=null,carCap=0;
+function formHtml(p){
+  const im=p==='im';
+  return`<div class="drop" id="${p}Drop"><div class="drop-ico">${ICON('up')}</div><div>拖入文件、多个文件或整个文件夹</div><div class="flex" style="justify-content:center"><label class="file-btn secondary" for="${p}PickF">${ICON('file')} 选择文件（可多选）</label><input type="file" id="${p}PickF" class="input-box" multiple><label class="file-btn secondary" for="${p}PickD">${ICON('folder')} 选择文件夹</label><input type="file" id="${p}PickD" class="input-box" webkitdirectory></div></div>
+<div class="sp-sum" id="${p}Sum"></div><div class="sp-list" id="${p}List"></div>
+<details class="txt-in"><summary>＋ 直接输入文字（作为一个 .txt 一并封存）</summary><textarea id="${p}Text" class="input-box" placeholder="在此输入要封存的文字…"></textarea></details>
+${im?`<div class="mode-row"><span class="mode-label">${ICON('img')} 隐写方式</span><div class="seg"><button id="imModePx" class="active" type="button">像素图（噪点图）</button><button id="imModeLsb" type="button">LSB 藏进照片</button></div><span class="mode-hint" id="imHint">每 3 字节 → 1 个像素，生成一张看似雪花噪点的独立图片</span></div>
+<div class="carrier-row" id="imCarRow" style="display:none"><label class="file-btn secondary mini" for="imCar">选择载体照片</label><input type="file" id="imCar" class="input-box" accept="image/*"><span class="key-hint" id="imCarN">未选择（支持 JPG/PNG/WebP/BMP 等，将自动转为无损 PNG）</span></div>`:''}
+${pwHtml(p+'Pw',true)}
+<div class="sp-opts">${kfHtml(p+'Kf','密钥文件（可选 · 双因素）')}<label class="cb"><input type="checkbox" id="${p}Comp" checked> 先压缩再加密（体积更小）</label><textarea id="${p}Note" class="input-box" placeholder="封印附言（可选，加密保存，解密时显示）" style="min-height:48px"></textarea></div>
+<button id="${p}Go">${im?'生成隐写图片':'封印为 .sp'}</button>${progHtml(p)}<div class="info" id="${p}Info"></div><div id="${p}Out"></div>`;
+}
+function totalOf(p){return st[p].items.reduce((n,x)=>n+x.file.size,0)}
+function draw(p){
+  const S=st[p],t=totalOf(p),L=S.items.slice(0,60);
+  $(p+'Sum').innerHTML=S.items.length?`<b>已添加 ${S.items.length} 个文件</b> · ${fmt(t)}<button type="button" class="link" data-clr="${p}">全部移除</button>`:'<span class="key-hint">尚未添加任何内容</span>';
+  $(p+'List').innerHTML=L.map((x,i)=>`<div class="sp-item"><span class="n" title="${esc(x.path)}">${esc(x.path)}</span><span class="key-hint">${fmt(x.file.size)}</span><b data-p="${p}" data-i="${i}" title="移除">×</b></div>`).join('')+(S.items.length>60?`<div class="key-hint" style="padding:4px 6px">…另有 ${S.items.length-60} 个文件已加入（未逐一显示）</div>`:'');
+  if(p==='im')capInfo();
+}
+function capInfo(){
+  if(imMode!=='lsb'||!carrier)return;const need=totalOf('im');
+  $('imCarN').innerHTML=esc(carrier.name)+' · 最多可藏 <b>'+fmt(carCap)+'</b>'+(need?' ｜ 待封存约 '+fmt(need)+(need>carCap*0.9?' <span class="err">（可能放不下，压缩后再看）</span>':''):'');
+}
+function wireForm(p){
+  const S=st[p];
+  const add=l=>{for(const x of l){x.path=x.path.replace(/\\/g,'/');S.gone.delete(x.path);if(!S.items.some(i=>i.path===x.path&&i.file.size===x.file.size&&i.file.lastModified===x.file.lastModified))S.items.push(x)}draw(p)};
+  S.sync=()=>{for(const id of['PickF','PickD'])for(const f of $(p+id).files){const path=(f.webkitRelativePath||f.name).replace(/\\/g,'/');if(!S.gone.has(path)&&!S.items.some(i=>i.path===path&&i.file.size===f.size))S.items.push({path,file:f})}draw(p)};
+  for(const id of['PickF','PickD']){$(p+id).onclick=e=>{e.target.value=''};$(p+id).onchange=e=>add([...e.target.files].map(f=>({path:id==='PickD'?(f.webkitRelativePath||f.name):f.name,file:f})))}
+  const dz=$(p+'Drop');
+  ['dragenter','dragover'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.add('over')}));
+  ['dragleave','drop'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.remove('over')}));
+  dz.addEventListener('drop',async e=>{
+    const ents=[...e.dataTransfer.items].map(i=>i.webkitGetAsEntry&&i.webkitGetAsEntry()).filter(Boolean),out=[];
+    if(ents.length)for(const en of ents)await walk(en,'',out);else out.push(...[...e.dataTransfer.files].map(f=>({path:f.name,file:f})));
+    add(out);
+  });
+  wirePw(p+'Pw',true);kfWire(p+'Kf');draw(p);$(p+'Go').onclick=()=>runSeal(p);
+  $(p+'Pw').addEventListener('keydown',e=>{if(e.key==='Enter')runSeal(p)});
+  if(p==='im'){
+    const setM=m=>{imMode=m;$('imModePx').classList.toggle('active',m==='px');$('imModeLsb').classList.toggle('active',m==='lsb');$('imCarRow').style.display=m==='lsb'?'flex':'none';
+      $('imHint').textContent=m==='lsb'?'把数据藏进正常照片的 RGB 最低位，肉眼看不出区别':'每 3 字节 → 1 个像素，生成一张看似雪花噪点的独立图片';capInfo()};
+    $('imModePx').onclick=()=>setM('px');$('imModeLsb').onclick=()=>setM('lsb');
+    $('imCar').onchange=async e=>{carrier=e.target.files[0]||null;carCap=0;if(!carrier){$('imCarN').textContent='未选择';return}
+      try{const b=await createImageBitmap(carrier);carCap=lsbCapacity(b.width*b.height);$('imCarN').dataset.d=b.width+'×'+b.height;capInfo()}catch(x){$('imCarN').innerHTML='<span class="err">无法读取这张图片</span>';carrier=null}};
+  }
+}
+async function walk(en,base,out){
+  if(en.isFile){const f=await new Promise((r,j)=>en.file(r,j));out.push({path:base+en.name,file:f})}
+  else if(en.isDirectory){const rd=en.createReader();let all=[];for(;;){const b=await new Promise((r,j)=>rd.readEntries(r,j));if(!b.length)break;all=all.concat(b)}for(const c of all)await walk(c,base+en.name+'/',out)}
+}
+async function runSeal(p){
+  const S=st[p],btn=$(p+'Go'),pw=$(p+'Pw').value,kf=$(p+'Kf').files[0],items=S.items.slice(),tx=$(p+'Text').value;
+  $(p+'Out').innerHTML='';
+  if(tx.trim())items.push({path:'文字内容.txt',file:new File([tx],'文字内容.txt',{type:'text/plain'})});
+  if(!items.length)return say(p,'请先添加要封存的文件、文件夹，或输入一段文字','err');
+  if(pw.length<8&&!kf)return say(p,'密码至少 8 位（或附带一个密钥文件）','err');
+  if(p==='im'&&imMode==='lsb'&&!carrier)return say(p,'LSB 方式需要先选择一张载体照片','err');
+  btn.disabled=true;say(p,'');
+  try{
+    const r=await sealItems(items,{pw,kf,comp:$(p+'Comp').checked,note:$(p+'Note').value},(c,m)=>prog(p,c,m));
+    let out,ext,desc,mime,tag,extra='';
+    prog(p,92,p==='sp'?'正在生成 Base64 文本护甲…':'正在写入图片…');await sleep(20);
+    if(p==='sp'){out=await armorBlob(r.blob,r.fp);ext='.sp';desc='孢子封印 .sp';tag='孢子封印 .sp';if(out.size<150e6){const chk=unarmor(await out.text());if(chk.size!==r.blob.size)throw new Error('自检失败：Base64 文本写入异常，请重试');extra=' · 已自检'}}
+    else{const e=await embedImage(r.blob,imMode,carrier);out=e.png;ext='.png';desc='隐写图片 PNG';mime='image/png';tag=imMode==='lsb'?'LSB 隐写照片':'像素图';extra=` · ${e.w}×${e.h}`}
+    const g=glyph(r.fp.h,72),total=items.reduce((n,x)=>n+x.file.size,0);
+    ledger.add({h:r.fp.hex,t:Date.now(),k:p==='sp'?'sp':'img',n:items.length,sz:total,l:''});renderLedger();
+    S.last={blob:out,ext,lock:true,base:(imMode==='lsb'&&p==='im'?'photo_':'spore_')+r.fp.id.slice(0,8),title:'保存 '+tag,g:glyph(r.fp.h,56),fp:r.fp.short,meta:`${items.length} 个文件 · ${fmt(total)} → ${fmt(out.size)}${extra}`,desc,mime};
+    prog(p,100,'完成');say(p,`${ICON('<path d="M5 13l4 4L19 7"/>')} 封存完成：${items.length} 个文件，${fmt(total)} → ${fmt(out.size)}${r.comp?'（已压缩）':''}${kf?' · 双因素':''}${extra}`,'ok');
+    $(p+'Out').innerHTML=`<div class="id-card">${g}<div class="id-main"><div><span class="badge">${tag}</span></div><div class="sp-fp">指纹 ${r.fp.short}</div><div class="key-hint">把这串指纹通过另一个渠道告诉对方，对方解密前核对，可确认拿到的就是这一份。</div><div class="flex"><button type="button" data-act="save" data-p="${p}">${ICON('dl')} 保存…</button><button type="button" class="secondary" data-act="fp" data-p="${p}">复制指纹</button>${p==='sp'?`<button type="button" class="secondary" data-act="txt" data-p="sp">复制 .sp 文本</button>`:''}</div></div></div>`;
+    saveDlg(S.last);
+  }catch(e){say(p,'失败：'+esc(e.message||e),'err')}
+  btn.disabled=false;
+}
+/* ================= 统一解密 ================= */
+let cur=null,res=[];
+function opForm(){
+  $('opForm').innerHTML=`<div class="drop" id="opDrop"><div class="drop-ico">${ICON('unlock')}</div><div>拖入 <b>.sp 封印文件</b> 或 <b>隐写图片</b>，自动识别</div><div class="flex" style="justify-content:center"><label class="file-btn secondary" for="opIn">${ICON('file')} 选择文件</label><input type="file" id="opIn" class="input-box"></div></div>
+<details class="txt-in"><summary>或：直接粘贴 .sp 文本（从聊天里复制来的）</summary><textarea id="opPaste" class="input-box" placeholder="粘贴以 -----BEGIN SPORE SEALED FILE----- 开头的整段文本…"></textarea><button type="button" class="secondary mini" id="opPasteGo" style="margin-top:6px">识别粘贴内容</button></details>
+<div id="opId"></div>${pwHtml('opPw',false)}
+<div class="sp-opts">${kfHtml('opKf','密钥文件（封印时用了才需要）')}
+<div class="flex"><span>核对指纹（可选）</span><input id="opFp" class="input-box" style="flex:1;min-width:180px;width:auto" placeholder="填入发送方告知的指纹，如 a1b2 c3d4 …" autocomplete="off"><span id="opFpS" class="key-hint"></span></div></div>
+<button id="opGo">${ICON('unlock')} 解密并还原</button>${progHtml('op')}<div class="info" id="opInfo"></div><div id="opOut"></div>
+<div class="preview-wrap" id="previewWrap" style="display:none;"><div class="preview-header"><span class="pv-title" id="pvTitle">文件预览</span><span class="pv-meta" id="pvMeta"></span></div><div class="preview-body" id="previewBody"><div class="pv-placeholder">预览将在此处显示</div></div></div>`;
+  wirePw('opPw',false);kfWire('opKf');
+  const take=f=>{$('opIn').dataset.n=f?f.name:'';opIdentify(f)};
+  $('opIn').onclick=e=>{e.target.value=''};$('opIn').onchange=e=>take(e.target.files[0]);
+  const dz=$('opDrop');['dragenter','dragover'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.add('over')}));
+  ['dragleave','drop'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.remove('over')}));
+  dz.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)take(f)});
+  $('opPasteGo').onclick=()=>{const t=$('opPaste').value.trim();if(!t)return toast('请先粘贴 .sp 文本');take(new File([t],'pasted.sp'))};$('opFp').oninput=fpCheck;$('opGo').onclick=runOpen;$('opPw').addEventListener('keydown',e=>{if(e.key==='Enter')runOpen()});
+}
+const normFp=v=>v.replace(/[^0-9a-f]/gi,'').toLowerCase();
+function fpCheck(){const v=normFp($('opFp').value),s=$('opFpS');
+  if(v.length<8){s.textContent='';return null}
+  if(!cur){s.innerHTML='';return null}
+  const ok=cur.fp.hex.startsWith(v);s.innerHTML=ok?'<span class="ok">✓ 一致</span>':'<span class="err">✗ 不一致</span>';return ok}
+function hidePv(){const w=$('previewWrap');if(w)w.style.display='none'}
+async function opIdentify(file){
+  cur=null;res=[];$('opOut').innerHTML='';$('opInfo').innerHTML='';hidePv();
+  if(!file){$('opId').innerHTML='';return}
+  $('opId').innerHTML='<div class="info">正在识别 '+esc(file.name)+' …</div>';
+  try{
+    let blob,kind,via;const head=new Uint8Array(await file.slice(0,10).arrayBuffer());
+    if(dec.decode(head)==='-----BEGIN'){kind='sp';blob=unarmor(await file.text())}
+    else if(MAGIC.every((m,i)=>head[i]===m)){kind='sp';blob=file}
+    else{const r=await extractImage(file);kind='img';via=r.mode;blob=new Blob([r.bytes])}
+    const hd=parseHead(new Uint8Array(await blob.slice(0,HLEN).arrayBuffer()));
+    cur={kind,via,blob,hd,fp:await fpOf(hd.pre,hd.commit)};renderId();fpCheck();
+  }catch(e){cur=null;$('opId').innerHTML=`<div class="info err">${esc(e.message||e)}</div>`}
+}
+function renderId(){
+  const c=cur,L=ledger.find(c.fp.hex),k=c.kind==='sp'?'孢子封印 .sp':'隐写图片 · '+(c.via==='lsb'?'LSB 藏入照片':'像素图');
+  $('opId').innerHTML=`<div class="id-card">${glyph(c.fp.h,72)}<div class="id-main"><div><span class="badge">${k}</span></div><div class="sp-fp">指纹 ${c.fp.short}</div><div class="key-hint">PBKDF2-SHA512 × ${c.hd.iter.toLocaleString()} · AES-256-GCM${c.hd.flags&1?' · 已压缩':''}${c.hd.flags&2?' · <b>需要密钥文件</b>':''} · ${fmt(c.blob.size)}</div><div class="${L?'ok':'key-hint'}">${L?'✓ 与本机档案匹配：'+new Date(L.t).toLocaleString()+' 封印'+(L.l?'（'+esc(L.l)+'）':''):'本机档案中没有这枚指纹——可能来自他人，建议在下方核对指纹'}</div></div></div>`;
+}
+async function runOpen(){
+  const btn=$('opGo'),pw=$('opPw').value,kf=$('opKf').files[0];$('opOut').innerHTML='';res=[];hidePv();
+  if(!cur)return say('op','请先选择 .sp 文件或隐写图片','err');
+  if(fpCheck()===false)return say('op','指纹不一致，已拒绝解密：这可能不是发送方给你的那一份','err');
+  if(!pw&&!kf)return say('op','请输入密码','err');
+  btn.disabled=true;say('op','');
+  try{
+    const r=await unseal(cur.blob,pw,kf,(c,m)=>prog('op',c,m));res=r.res;prog('op',100,'完成');
+    say('op',`${ICON('<path d="M5 13l4 4L19 7"/>')} 解密成功：${res.length} 个文件 · 封印于 ${new Date(r.man.t).toLocaleString()}`,'ok');
+    $('opOut').innerHTML=(r.man.note?`<div class="note-box"><b>附言：</b><div style="white-space:pre-wrap">${esc(r.man.note)}</div></div>`:'')+
+      res.slice(0,200).map((x,k)=>`<div class="sp-item"><span class="n" title="${esc(x.p)}">${esc(x.p)}</span><span class="key-hint">${fmt(x.blob.size)}</span><button type="button" class="secondary mini" data-pv="${k}">预览</button><button type="button" class="mini" data-dl="${k}">下载</button></div>`).join('')+
+      (res.length>200?`<div class="key-hint">…另有 ${res.length-200} 个文件，可通过 ZIP 获取</div>`:'')+(res.length>1?`<button type="button" id="opZip">${ICON('dl')} 全部打包为 ZIP</button>`:'');
+    if(res.length===1)pv(0);
+  }catch(e){prog('op',0,'');say('op',esc(e.message||e),'err')}
+  btn.disabled=false;
+}
+const safe=p=>p.replace(/\\/g,'/').split('/').filter(x=>x&&x!=='.'&&x!=='..').join('/')||'file';
+async function pv(k){
+  const r=res[k];if(r.blob.size>300*1048576)return toast('文件超过 300MB，不提供在线预览，请直接下载');
+  renderPreview(new Uint8Array(await r.blob.arrayBuffer()),safe(r.p).split('/').pop(),r.blob.size);
+  $('previewWrap').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function dlOne(k){const r=res[k],n=safe(r.p).split('/').pop();saveDlg({blob:r.blob,base:n,lock:false,title:'保存文件',meta:fmt(r.blob.size)+' · '+r.p,mime:mimeOf(n)||'application/octet-stream'})}
+/* ---- 极简 ZIP（STORE，无依赖） ---- */
+const crcT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+async function crc(b){let c=-1;const rd=b.stream().getReader();for(;;){const{done,value}=await rd.read();if(done)break;for(let i=0;i<value.length;i++)c=crcT[(c^value[i])&255]^(c>>>8)}return(c^-1)>>>0}
+async function zip(list){
+  const parts=[],cd=[],n=new Date();let off=0;
+  const dt=(n.getHours()<<11)|(n.getMinutes()<<5)|(n.getSeconds()>>1),dd=((n.getFullYear()-1980)<<9)|((n.getMonth()+1)<<5)|n.getDate();
+  for(const{p,blob}of list){
+    const nm=enc.encode(safe(p)),c=await crc(blob),sz=blob.size;
+    const L=new DataView(new ArrayBuffer(30));L.setUint32(0,0x04034b50,true);L.setUint16(4,20,true);L.setUint16(6,0x800,true);L.setUint16(10,dt,true);L.setUint16(12,dd,true);L.setUint32(14,c,true);L.setUint32(18,sz,true);L.setUint32(22,sz,true);L.setUint16(26,nm.length,true);
+    parts.push(L.buffer,nm,blob);
+    const C=new DataView(new ArrayBuffer(46));C.setUint32(0,0x02014b50,true);C.setUint16(4,20,true);C.setUint16(6,20,true);C.setUint16(8,0x800,true);C.setUint16(12,dt,true);C.setUint16(14,dd,true);C.setUint32(16,c,true);C.setUint32(20,sz,true);C.setUint32(24,sz,true);C.setUint16(28,nm.length,true);C.setUint32(42,off,true);
+    cd.push(C.buffer,nm);off+=30+nm.length+sz;
+  }
+  const cds=cd.reduce((a,x)=>a+x.byteLength,0),E=new DataView(new ArrayBuffer(22));
+  E.setUint32(0,0x06054b50,true);E.setUint16(8,list.length,true);E.setUint16(10,list.length,true);E.setUint32(12,cds,true);E.setUint32(16,off,true);
+  return new Blob([...parts,...cd,E.buffer],{type:'application/zip'});
+}
+/* ================= 事件委托 / 导航 / 初始化 ================= */
+document.addEventListener('click',async e=>{
+  const t=e.target,d=t.dataset||{},b=t.closest&&t.closest('[data-act]');
+  if(d.i!=null&&d.p){const S=st[d.p];const x=S.items.splice(+d.i,1)[0];if(x)S.gone.add(x.path);draw(d.p)}
+  else if(d.clr){const S=st[d.clr];S.items.forEach(x=>S.gone.add(x.path));S.items=[];draw(d.clr)}
+  else if(b){const S=st[b.dataset.p];if(b.dataset.act==='save'&&S.last)saveDlg(S.last);else if(b.dataset.act==='fp'&&S.last)copy('孢子封印指纹：'+S.last.fp,'指纹');else if(b.dataset.act==='txt'&&S.last){if(S.last.blob.size>5*1048576)toast('文件较大，建议直接保存文件而不是复制文本');else copy(await S.last.blob.text(),'.sp 文本')}}
+  else if(d.pv!=null)pv(+d.pv);else if(d.dl!=null)dlOne(+d.dl);
+  else if(t.id==='opZip'){t.disabled=true;try{saveDlg({blob:await zip(res),base:'spore_unsealed',ext:'.zip',lock:true,title:'保存 ZIP 压缩包',meta:res.length+' 个文件 · 保留原目录结构',mime:'application/zip',desc:'ZIP 压缩包'})}catch(x){say('op','打包失败：'+esc(x.message),'err')}t.disabled=false}
+  else if(d.cp){copy('孢子封印指纹：'+d.cp.slice(0,16).replace(/(.{4})/g,'$1 ').trim(),'指纹')}
+  else if(d.del){ledger.del(d.del);renderLedger()}
+  else if(t.id==='ledClr'){if(confirm('清空本机全部封印档案记录？（不影响任何已封印的文件）')){ledger.clear();renderLedger()}}
+  else if(t.id==='ledMore'){ledAll=!ledAll;renderLedger()}
+});
+document.addEventListener('change',e=>{const h=e.target.dataset&&e.target.dataset.h;if(h&&e.target.classList.contains('led-note'))ledger.note(h,e.target.value.trim())});
+const HDR={sp:'把任意文件、多个文件或整个文件夹封存为自创的 <strong>.sp 孢子封印</strong>：PBKDF2-SHA512 + HKDF + AES-256-GCM 流式分块加密 + 密钥承诺，输出为 Base64 文本，仅本工具可封印与解封。',
+ im:'把同一套 <strong>SP-1 封印</strong>藏进图片：像素图（噪点图）或 LSB（藏进正常照片）。图片与 .sp 共用加密内核与指纹，用“解密”页还原。',
+ op:'<strong>统一解密</strong>：自动识别 .sp 封印与隐写图片，先显示指纹并比对本机档案，再验密码、还原、预览、下载。'};
+const vmap={sp:'v-sp',im:'v-im',op:'v-op'};
+function show(v){
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
+  for(const k in vmap)$(vmap[k]).classList.toggle('on',k===v);
+  $('hdrInfo').innerHTML=HDR[v];try{history.replaceState(null,'','#'+v)}catch(e){}
+  if(v!=='op')st[v].sync&&st[v].sync();
+}
+document.querySelectorAll('.nav-item').forEach(b=>b.onclick=()=>show(b.dataset.v));
+$('spForm').innerHTML=formHtml('sp');$('imForm').innerHTML=formHtml('im');
+wireForm('sp');wireForm('im');opForm();renderLedger();
+['pageshow','orientationchange','visibilitychange'].forEach(t=>window.addEventListener(t,()=>setTimeout(()=>{st.sp.sync();st.im.sync()},300)));
+let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{st.sp.sync();st.im.sync()},400)});
+$('btnClear').addEventListener('click',()=>{
+  for(const p of['sp','im']){const S=st[p];S.items=[];S.gone.clear();S.last=null;for(const id of['PickF','PickD','Kf'])$(p+id).value='';$(p+'Pw').value='';$(p+'Text').value='';$(p+'Note').value='';$(p+'Out').innerHTML='';$(p+'Info').innerHTML='';$(p+'W').style.display='none';$(p+'KfN').textContent='未选择';$(p+'PwS').textContent='';draw(p)}
+  carrier=null;$('imCar').value='';$('imCarN').textContent='未选择（支持 JPG/PNG/WebP/BMP 等，将自动转为无损 PNG）';
+  cur=null;res=[];$('opIn').value='';$('opKf').value='';$('opPw').value='';$('opFp').value='';$('opFpS').textContent='';$('opKfN').textContent='未选择';$('opId').innerHTML='';$('opOut').innerHTML='';$('opInfo').innerHTML='';$('opW').style.display='none';$('opPaste').value='';hidePv();
+  urls.forEach(URL.revokeObjectURL);urls=[];
+});
+const ov=$('usageModalOverlay');$('btnUsage').addEventListener('click',()=>ov.classList.add('active'));$('usageModalCloseBtn').addEventListener('click',()=>ov.classList.remove('active'));
+ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('active')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.active').forEach(el=>el.classList.remove('active'))});
+window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>{if(e.target.closest&&e.target.closest('.drop'))return;e.preventDefault();const f=e.dataTransfer.files[0];if(f){show('op');opIdentify(f)}});
+const h0=location.hash.slice(1);show(h0==='img'||h0==='enc'?'im':h0==='op'||h0==='dec'?'op':'sp');
+})();
+
+</script>
+<script>
+/* 点击涟漪反馈（事件委托，动态生成的按钮同样有效） */
+(function(){
+  const SEL='button:not(:disabled),.file-btn,.drop';
+  document.addEventListener('pointerdown',function(e){
+    if(e.button>0)return;
+    const el=e.target.closest&&e.target.closest(SEL);
+    if(!el||el.matches('button.link'))return;
+    const r=el.getBoundingClientRect(),d=Math.max(r.width,r.height)*2.1;
+    const x=(e.clientX||r.left+r.width/2)-r.left-d/2,y=(e.clientY||r.top+r.height/2)-r.top-d/2;
+    const s=document.createElement('span');s.className='sp-ripple';
+    s.style.cssText='width:'+d+'px;height:'+d+'px;left:'+x+'px;top:'+y+'px';
+    el.appendChild(s);setTimeout(()=>s.remove(),620);
+  },{passive:true});
+  /* 点击完成后让按钮短暂“弹一下”，并放开焦点，避免残留的高亮框 */
+  document.addEventListener('click',function(e){
+    const el=e.target.closest&&e.target.closest('button,.file-btn');
+    if(!el)return;
+    el.classList.remove('sp-done');void el.offsetWidth;el.classList.add('sp-done');
+    setTimeout(()=>el.classList.remove('sp-done'),380);
+    if(e.detail>0&&el.tagName==='BUTTON'&&document.activeElement===el)setTimeout(()=>{try{el.blur()}catch(_){}},400);
+  },true);
+})();
+</script>
+</body>
+</html>
