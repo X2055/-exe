@@ -1,13 +1,19 @@
 name: Build Spore
-on: [workflow_dispatch, push]
+on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
+        with:
+          node-version: 20
       - run: npm install
       - run: npm run build
-      - uses: actions/upload-artifact@v4
-        with: { name: Spore, path: dist/Spore.exe }
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v10.0.${{ github.run_number }}
+          name: Spore ${{ github.run_number }}
+          files: dist/Spore.exe
